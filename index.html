@@ -1,0 +1,3371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ Thống Thích Nghi Phức Tạp — 120 Khái Niệm Cốt Lõi</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2d3150;
+    --text: #e8eaf6;
+    --text2: #9fa8da;
+    --text3: #5c6bc0;
+    --accent: #5c6bc0;
+    --accent2: #7986cb;
+    --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.65; min-height: 100vh; }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #0d1b4b 0%, #1a1040 40%, #0f1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% -20%, rgba(92,107,192,0.25) 0%, transparent 70%);
+  }
+  .hero-label {
+    display: inline-block;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--accent2); background: rgba(92,107,192,0.15);
+    border: 1px solid rgba(92,107,192,0.3);
+    padding: 0.3rem 1rem; border-radius: 2rem; margin-bottom: 1.2rem;
+  }
+  .hero h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.02em;
+    color: #fff; line-height: 1.2; margin-bottom: 0.8rem;
+    position: relative;
+  }
+  .hero h1 span { color: var(--accent2); }
+  .hero p { color: var(--text2); font-size: 1rem; max-width: 600px; margin: 0 auto 1.5rem; position: relative; }
+  .hero-stats {
+    display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;
+    position: relative;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-n { font-size: 2rem; font-weight: 800; color: var(--accent2); }
+  .stat-l { font-size: 0.75rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ── CONTROLS ── */
+  .controls { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; position: sticky; top: 0; z-index: 100; }
+  .search-wrap { position: relative; margin-bottom: 0.75rem; }
+  .search-wrap input {
+    width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 1rem; }
+  .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 0.4rem 0.85rem; border-radius: 20px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); font-size: 0.8rem; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .filter-btn:hover { border-color: var(--cat-color, var(--accent)); color: var(--cat-color, var(--accent)); }
+  .filter-btn.active { background: var(--cat-color, var(--accent)); border-color: var(--cat-color, var(--accent)); color: #fff; font-weight: 600; }
+  .filter-btn[data-cat="all"] { --cat-color: #5c6bc0; }
+
+  /* ── GRID ── */
+  .main { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+  .results-info { color: var(--text3); font-size: 0.85rem; margin-bottom: 1rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } .hero-stats { gap: 1.2rem; } }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; transition: transform 0.18s, box-shadow 0.18s;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .card.hidden { display: none; }
+  .card-header {
+    padding: 1rem 1.1rem 0.9rem;
+    cursor: pointer; position: relative;
+    transition: background 0.15s;
+  }
+  .card-header:hover { background: var(--surface2); }
+  .card-meta { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .card-num { font-size: 0.75rem; color: var(--text3); font-weight: 700; font-family: monospace; }
+  .card-cat {
+    font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.6rem;
+    border-radius: 20px; white-space: nowrap;
+  }
+  .card-title-wrap { margin-bottom: 0.4rem; }
+  .card-title { font-size: 1rem; font-weight: 700; color: var(--text); line-height: 1.3; display: inline; }
+  .card-en { font-size: 0.8rem; color: var(--text3); font-style: italic; margin-left: 0.4rem; }
+  .card-summary { font-size: 0.85rem; color: var(--text2); line-height: 1.5; }
+  .card-toggle {
+    position: absolute; right: 1rem; top: 1rem;
+    font-size: 0.75rem; color: var(--text3); transition: transform 0.25s;
+  }
+  .card-header.open .card-toggle { transform: rotate(180deg); }
+
+  /* ── CARD BODY ── */
+  .card-body { display: none; padding: 0 1.1rem 1.1rem; border-top: 1px solid var(--border); }
+  .card-body.open { display: block; }
+  .card-detail { margin-top: 0.9rem; font-size: 0.88rem; color: var(--text2); line-height: 1.7; }
+  .card-detail strong { color: var(--text); }
+  .card-detail em { color: var(--accent2); font-style: normal; }
+  .card-example, .card-takeaway {
+    margin-top: 0.75rem; padding: 0.75rem; border-radius: 8px;
+    font-size: 0.85rem; line-height: 1.6;
+  }
+  .card-example { background: rgba(92,107,192,0.08); border: 1px solid rgba(92,107,192,0.15); }
+  .card-takeaway { background: rgba(16,163,74,0.08); border: 1px solid rgba(16,163,74,0.15); }
+  .label-tag {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    margin-bottom: 0.35rem;
+  }
+  .example-tag { color: var(--accent2); }
+  .takeaway-tag { color: #4ade80; }
+
+  /* ── FOOTER ── */
+  .footer { text-align: center; padding: 2rem; color: var(--text3); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+  .no-results { text-align: center; padding: 3rem; color: var(--text3); font-size: 1rem; grid-column: 1/-1; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-label">Complex Adaptive Systems</div>
+  <h1>Hệ Thống Thích Nghi <span>Phức Tạp</span></h1>
+  <p>120 khái niệm cốt lõi giúp bạn hiểu và điều hướng thế giới phức tạp không ngừng thay đổi</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-n">120</div><div class="stat-l">Khái niệm</div></div>
+    <div class="stat"><div class="stat-n">7</div><div class="stat-l">Chủ đề</div></div>
+    <div class="stat"><div class="stat-n">∞</div><div class="stat-l">Ứng dụng</div></div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Tìm kiếm khái niệm, ví dụ, bài học..." oninput="searchCards()">
+  </div>
+  <div class="filters" id="filterBtns">
+    <button class="filter-btn active" data-cat="all" onclick="filterCards('all', this)">🌐 Tất cả (120)</button>
+<button class="filter-btn" data-cat="cat1" onclick="filterCards('cat1', this)" style="--cat-color:#2563eb">⚙️ Nền Tảng CAS (17)</button>
+<button class="filter-btn" data-cat="cat2" onclick="filterCards('cat2', this)" style="--cat-color:#16a34a">🧬 Tiến Hóa & Thích Nghi (18)</button>
+<button class="filter-btn" data-cat="cat3" onclick="filterCards('cat3', this)" style="--cat-color:#9333ea">🕸️ Mạng Lưới & Kết Nối (19)</button>
+<button class="filter-btn" data-cat="cat4" onclick="filterCards('cat4', this)" style="--cat-color:#ea580c">🔄 Động Lực & Phản Hồi (19)</button>
+<button class="filter-btn" data-cat="cat5" onclick="filterCards('cat5', this)" style="--cat-color:#0891b2">👥 Hành Vi Tập Thể (15)</button>
+<button class="filter-btn" data-cat="cat6" onclick="filterCards('cat6', this)" style="--cat-color:#be185d">🏢 Ứng Dụng Tổ Chức (14)</button>
+<button class="filter-btn" data-cat="cat7" onclick="filterCards('cat7', this)" style="--cat-color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai (18)</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="results-info" id="resultsInfo">Hiển thị 120 / 120 khái niệm</div>
+  <div class="grid" id="cardGrid">
+    
+<div class="card" data-cat="cat1" data-id="001">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#001</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hệ Thống Thích Nghi Phức Tạp</h3>
+      <span class="card-en">(Complex Adaptive System (CAS))</span>
+    </div>
+    <p class="card-summary">Hệ thống gồm nhiều tác nhân tương tác, tự tổ chức và thích nghi với môi trường thay đổi.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p>Một <strong>hệ thống thích nghi phức tạp (CAS)</strong> là tập hợp các tác nhân độc lập tương tác với nhau theo các quy tắc đơn giản, tạo ra hành vi tổng thể phức tạp không thể dự đoán từ từng phần riêng lẻ. Điểm mấu chốt: toàn thể lớn hơn tổng các bộ phận.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Đàn chim sáo bay theo đội hình uốn lượn kỳ diệu — không có chỉ huy trung tâm, mỗi con chỉ tuân theo 3 quy tắc đơn giản với con bên cạnh.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đừng quản lý từng phần — hãy thiết kế các quy tắc tương tác.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="002">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#002</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tính Nổi Sinh</h3>
+      <span class="card-en">(Emergence)</span>
+    </div>
+    <p class="card-summary">Thuộc tính mới xuất hiện ở cấp độ hệ thống mà không tồn tại ở cấp độ thành phần.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tính nổi sinh (Emergence)</strong> xảy ra khi các tương tác cục bộ giữa các tác nhân đơn giản tạo ra các mẫu hình, cấu trúc hoặc hành vi phức tạp ở cấp độ cao hơn. Ý thức nổi sinh từ tế bào thần kinh. Thị trường nổi sinh từ giao dịch cá nhân. Văn hóa nổi sinh từ hành vi tập thể.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Không một tế bào não nào 'biết' bạn đang buồn — nhưng hàng tỷ tế bào tương tác tạo ra trải nghiệm cảm xúc hoàn chỉnh.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tìm hiểu hệ thống ở cấp độ nổi sinh, không chỉ ở cấp thành phần.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="003">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#003</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tự Tổ Chức</h3>
+      <span class="card-en">(Self-Organization)</span>
+    </div>
+    <p class="card-summary">Trật tự xuất hiện từ bên trong hệ thống mà không cần kiểm soát từ bên ngoài.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tự tổ chức (Self-Organization)</strong> là quá trình hệ thống tự phát tạo ra cấu trúc, mẫu hình hoặc trật tự mà không có thiết kế hay điều phối từ bên ngoài. Năng lượng và thông tin chảy qua hệ thống, các tác nhân phản ứng cục bộ, và trật tự toàn cục xuất hiện tự nhiên.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Tinh thể tuyết hình thành cấu trúc đối xứng 6 nhánh hoàn hảo — không có 'kế hoạch' nào, chỉ là phân tử nước liên kết theo nguyên lý vật lý.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tạo điều kiện cho tự tổ chức thay vì áp đặt trật tự từ bên ngoài.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="004">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#004</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tác Nhân</h3>
+      <span class="card-en">(Agent)</span>
+    </div>
+    <p class="card-summary">Thực thể tự chủ trong hệ thống, có khả năng nhận thức môi trường và hành động.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tác nhân (Agent)</strong> là đơn vị cơ bản của CAS — có thể là cá nhân, tổ chức, gen, hoặc bất kỳ thực thể nào có khả năng: (1) cảm nhận môi trường, (2) xử lý thông tin, (3) hành động, và (4) học hỏi/thích nghi. Mỗi tác nhân tuân theo tập quy tắc riêng.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Trong thị trường tài chính: mỗi nhà đầu tư là một tác nhân — đọc thông tin theo cách riêng, quyết định theo chiến lược riêng, tạo ra thị trường tổng thể không ai kiểm soát.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Hiểu tác nhân là hiểu hạt nhân của hệ thống.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="005">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#005</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Phản Hồi Vòng Lặp</h3>
+      <span class="card-en">(Feedback Loop)</span>
+    </div>
+    <p class="card-summary">Đầu ra của hệ thống quay lại ảnh hưởng đến đầu vào, tạo vòng lặp nhân quả.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Vòng phản hồi (Feedback Loop)</strong> là cơ chế trung tâm của CAS. Có hai loại: <em>Phản hồi dương (Positive feedback)</em> khuếch đại — tăng trưởng, bong bóng, lan truyền viral. <em>Phản hồi âm (Negative feedback)</em> ổn định — điều chỉnh nhiệt độ cơ thể, thị trường tự điều chỉnh, homoeostasis sinh học.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Sợ hãi trong thị trường chứng khoán: giá giảm → nhà đầu tư sợ → bán tháo → giá giảm thêm. Vòng phản hồi dương khuếch đại khủng hoảng.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trước khi can thiệp, hãy vẽ bản đồ vòng phản hồi đang hoạt động.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="006">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#006</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Phi Tuyến Tính</h3>
+      <span class="card-en">(Nonlinearity)</span>
+    </div>
+    <p class="card-summary">Nguyên nhân nhỏ có thể tạo hệ quả lớn; tỷ lệ đầu vào-đầu ra không cố định.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Phi tuyến tính (Nonlinearity)</strong> có nghĩa là trong CAS, mối quan hệ nhân-quả không tuân theo tỷ lệ thuận. Một nguyên nhân nhỏ có thể tạo hệ quả khổng lồ (hiệu ứng cánh bướm), hoặc ngược lại — nhiều nỗ lực lớn có thể không tạo ra kết quả đáng kể.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Một tweet của Elon Musk có thể khiến giá Bitcoin tăng 20% — trong khi hàng nghìn phân tích chuyên sâu không tạo ra tác động tương tự.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong hệ thống phi tuyến, hãy tìm đòn bẩy nhỏ có tác động lớn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="007">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#007</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Phụ Thuộc Lịch Sử</h3>
+      <span class="card-en">(Path Dependency)</span>
+    </div>
+    <p class="card-summary">Trạng thái hiện tại của hệ thống bị định hình bởi lịch sử, không chỉ bởi điều kiện hiện tại.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Phụ thuộc lịch sử (Path Dependency)</strong> nghĩa là các quyết định và sự kiện trong quá khứ tạo ra 'lối mòn' ràng buộc tương lai. Hệ thống không thể đơn giản 'reset' về trạng thái tối ưu — nó phải tiếp tục từ nơi nó đang đứng.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Bàn phím QWERTY được thiết kế năm 1870 để tránh kẹt phím máy đánh chữ — ngày nay vẫn là chuẩn toàn cầu dù lý do ban đầu không còn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Hiểu lịch sử hệ thống trước khi cố thay đổi nó.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="008">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#008</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Biên Hỗn Loạn</h3>
+      <span class="card-en">(Edge of Chaos)</span>
+    </div>
+    <p class="card-summary">Vùng giữa trật tự hoàn toàn và hỗn loạn hoàn toàn — nơi hệ thống sáng tạo và thích nghi tốt nhất.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Biên hỗn loạn (Edge of Chaos)</strong> là khái niệm của nhà vật lý Christopher Langton: hệ thống phức tạp hoạt động tối ưu ở ranh giới giữa ổn định hoàn toàn (không có gì thay đổi) và hỗn loạn hoàn toàn (mọi thứ ngẫu nhiên). Đây là vùng tính toán và sáng tạo xảy ra.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Bộ não hoạt động tốt nhất không phải khi hoàn toàn bình tĩnh (ngủ) hay hoàn toàn hỗn loạn (động kinh), mà ở trạng thái kích thích vừa đủ — dòng chảy sáng tạo.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đừng tìm kiếm ổn định tuyệt đối — hãy duy trì ở biên hỗn loạn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="009">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#009</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Khả Năng Thích Nghi</h3>
+      <span class="card-en">(Adaptability)</span>
+    </div>
+    <p class="card-summary">Năng lực của hệ thống thay đổi cấu trúc và hành vi để phù hợp với môi trường mới.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Khả năng thích nghi (Adaptability)</strong> là đặc tính cốt lõi phân biệt CAS với hệ thống cơ học. Hệ thống thích nghi không chỉ phản ứng với thay đổi — nó học hỏi, tiến hóa và thậm chí thay đổi các quy tắc hoạt động của chính mình.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Vi khuẩn E.coli phát triển khả năng kháng kháng sinh chỉ trong vài ngày — tiến hóa theo thời gian thực để sinh tồn trong môi trường thù địch.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế hệ thống để học hỏi, không chỉ để thực thi.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="010">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#010</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tính Đa Dạng</h3>
+      <span class="card-en">(Diversity)</span>
+    </div>
+    <p class="card-summary">Sự đa dạng trong tác nhân và chiến lược làm tăng khả năng phục hồi và thích nghi của hệ thống.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tính đa dạng (Diversity)</strong> trong CAS không chỉ là giá trị đạo đức — đó là cơ chế sinh tồn. Hệ thống đồng nhất dễ bị xóa sổ bởi một mối đe dọa duy nhất. Hệ thống đa dạng có nhiều chiến lược ứng phó, tăng xác suất ít nhất một chiến lược hiệu quả.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nông nghiệp độc canh (monoculture): Ireland 1845 trồng một giống khoai tây — dịch bệnh xóa sổ toàn bộ, gây nạn đói cho 1 triệu người. Đa dạng sinh học ngăn chặn điều này.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Bảo vệ sự đa dạng — đó là bảo hiểm rủi ro của hệ thống.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="011">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#011</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Kết Nối Mạng</h3>
+      <span class="card-en">(Connectivity)</span>
+    </div>
+    <p class="card-summary">Mức độ và mẫu hình kết nối giữa các tác nhân định hình cách thông tin và ảnh hưởng lan truyền.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Kết nối mạng (Connectivity)</strong> quyết định tốc độ và phạm vi lan truyền trong hệ thống. Quá ít kết nối: thông tin không lan, hệ thống trì trệ. Quá nhiều kết nối: nhiễu loạn lan truyền quá nhanh, không thể kiểm soát. Cấu trúc mạng tối ưu cân bằng hai thái cực này.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Mạng xã hội siêu kết nối: tin giả lan nhanh hơn sự thật vì kết nối quá dày đặc — thiếu 'ma sát' để kiểm chứng thông tin trước khi chia sẻ.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế cấu trúc kết nối cẩn thận — nó quyết định hệ thống lan truyền gì.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="012">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#012</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Sự Dư Thừa</h3>
+      <span class="card-en">(Redundancy)</span>
+    </div>
+    <p class="card-summary">Nhiều thành phần thực hiện cùng chức năng — lãng phí trong hiệu quả nhưng thiết yếu cho phục hồi.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Sự dư thừa (Redundancy)</strong> là nghịch lý của hệ thống phức tạp: những gì trông như lãng phí thường là nguồn gốc của khả năng phục hồi. Hệ thống sinh học tràn đầy dư thừa — hai quả thận, hai lá phổi, hàng nghìn gen dự phòng — vì tiến hóa 'biết' rằng thất bại là không thể tránh.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Internet được thiết kế bởi DARPA với nguyên lý dư thừa: nếu một node bị phá hủy (bởi bom hạt nhân), dữ liệu tự tìm đường khác. Không có điểm thất bại duy nhất.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đừng tối ưu hóa dư thừa đi — đó là bảo hiểm của hệ thống.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="013">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#013</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tính Không Dự Đoán Được</h3>
+      <span class="card-en">(Unpredictability)</span>
+    </div>
+    <p class="card-summary">Hành vi dài hạn của CAS không thể dự đoán chính xác dù biết đầy đủ điều kiện ban đầu.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tính không dự đoán được (Unpredictability)</strong> không phải lỗi của mô hình — đó là đặc tính cơ bản. Độ nhạy cảm với điều kiện ban đầu (chaos theory) cộng với vô số tương tác phi tuyến khiến dự đoán dài hạn nguyên tắc là bất khả thi. Điều này không nghĩa là vô dụng — chúng ta vẫn hiểu được xu hướng và xác suất.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Dự báo thời tiết: chính xác 90% trong 1 ngày, 70% trong 3 ngày, gần như vô nghĩa sau 10 ngày — không phải vì công nghệ kém mà vì khí quyển là CAS.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Dự đoán xu hướng, không dự đoán sự kiện cụ thể.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="014">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#014</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Cấp Độ Phân Tầng</h3>
+      <span class="card-en">(Hierarchical Levels)</span>
+    </div>
+    <p class="card-summary">CAS thường có nhiều cấp độ tổ chức, mỗi cấp có quy tắc và hành vi nổi sinh riêng.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Cấp độ phân tầng (Hierarchical Levels)</strong> trong CAS không phải là cấp bậc quyền lực mà là cấp độ tổ chức. Mỗi cấp độ có logic riêng: gen → tế bào → mô → cơ quan → cơ thể → xã hội. Hiểu sai cấp độ là nguyên nhân phổ biến của can thiệp thất bại.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Điều trị ung thư bằng cách chỉ tiêu diệt tế bào ung thư (cấp tế bào) mà bỏ qua môi trường tạo ra ung thư (cấp mô, cấp hệ miễn dịch) — thường thất bại.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Xác định rõ bạn đang can thiệp ở cấp độ nào của hệ thống.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="015">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#015</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hệ Thống Mở</h3>
+      <span class="card-en">(Open System)</span>
+    </div>
+    <p class="card-summary">CAS trao đổi năng lượng, vật chất và thông tin với môi trường — không bao giờ hoàn toàn cô lập.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hệ thống mở (Open System)</strong> là điều kiện thiết yếu cho CAS. Hệ thống đóng sẽ tiến đến cân bằng nhiệt và chết. Hệ thống mở duy trì trạng thái ổn định động (dynamic equilibrium) bằng cách liên tục nhập năng lượng và thông tin, và xuất entropy.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Cơ thể người là hệ thống mở hoàn hảo: nhập thức ăn/không khí/thông tin cảm giác, xuất nhiệt/chất thải/hành động. Ngừng trao đổi = chết.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Luôn hỏi: hệ thống này trao đổi gì với môi trường và qua các kênh nào?</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="016">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#016</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Trạng Thái Ổn Định Động</h3>
+      <span class="card-en">(Dynamic Equilibrium)</span>
+    </div>
+    <p class="card-summary">Hệ thống duy trì 'cân bằng' không phải bằng cách đứng yên mà bằng cách liên tục điều chỉnh.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Trạng thái ổn định động (Dynamic Equilibrium)</strong> khác với cân bằng tĩnh. Một cây đứng thẳng trong gió không vì cứng — vì liên tục uốn và phục hồi. Hệ thống kinh tế 'ổn định' không phải vì không có thay đổi — vì vô số điều chỉnh vi mô triệt tiêu nhau.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Người đi xe đạp giữ thăng bằng không phải bằng cách đứng yên mà bằng cách liên tục điều chỉnh hướng lái micro — đây là hình mẫu của dynamic equilibrium.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Ổn định thực sự = khả năng điều chỉnh liên tục, không phải bất động.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat1" data-id="017">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #2563eb">
+    <div class="card-meta">
+      <span class="card-num">#017</span>
+      <span class="card-cat" style="background:#2563eb20; color:#2563eb">⚙️ Nền Tảng CAS</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Bộ Nhớ Hệ Thống</h3>
+      <span class="card-en">(System Memory)</span>
+    </div>
+    <p class="card-summary">Hệ thống lưu trữ thông tin về lịch sử trong cấu trúc, không chỉ trong các tác nhân riêng lẻ.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Bộ nhớ hệ thống (System Memory)</strong> được mã hóa trong cấu trúc và mẫu hình của hệ thống — không chỉ trong đầu óc các cá nhân. Thể chế, văn hóa, cơ sở hạ tầng, luật pháp — tất cả là bộ nhớ hệ thống cho phép hành vi hiệu quả mà không cần tính toán lại từ đầu.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Luật giao thông là bộ nhớ hệ thống: mã hóa kinh nghiệm hàng triệu vụ tai nạn thành quy tắc đơn giản, cho phép hàng triệu người lạ di chuyển an toàn mà không cần thảo luận.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Xây dựng bộ nhớ hệ thống tốt để giảm chi phí phối hợp.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="018">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#018</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Chọn Lọc Tự Nhiên</h3>
+      <span class="card-en">(Natural Selection)</span>
+    </div>
+    <p class="card-summary">Cơ chế tác nhân phù hợp hơn với môi trường có xác suất sống sót và sinh sản cao hơn.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Chọn lọc tự nhiên (Natural Selection)</strong> không chỉ là sinh học — đó là nguyên lý phổ quát của CAS. Bất kỳ hệ thống nào có biến thể, chọn lọc và kế thừa đều tiến hóa. Doanh nghiệp cạnh tranh, ý tưởng lan truyền, chiến lược thích nghi — đều tuân theo logic tương tự.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Startup ecosystem: hàng nghìn startup thử nghiệm các mô hình khác nhau. Thị trường 'chọn lọc' những mô hình phù hợp. Các startup tốt nhất trở thành template cho thế hệ tiếp theo.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế hệ thống có đủ biến thể để chọn lọc tự nhiên hoạt động.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="019">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#019</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Áp Lực Chọn Lọc</h3>
+      <span class="card-en">(Selection Pressure)</span>
+    </div>
+    <p class="card-summary">Lực lượng môi trường xác định đặc điểm nào được tưởng thưởng và đặc điểm nào bị loại bỏ.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Áp lực chọn lọc (Selection Pressure)</strong> định hình tiến hóa của CAS. Thay đổi áp lực chọn lọc sẽ thay đổi hướng tiến hóa của toàn hệ thống. Nhà quản lý thông minh hiểu rằng họ không quản lý người — họ thiết kế áp lực chọn lọc.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Thay đổi cơ chế thưởng phạt trong tổ chức = thay đổi áp lực chọn lọc = thay đổi hành vi tổng thể. Thưởng cộng tác → văn hóa cộng tác nổi sinh. Thưởng cạnh tranh cá nhân → văn hóa cạnh tranh nổi sinh.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Muốn thay đổi hệ thống, hãy thay đổi áp lực chọn lọc.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="020">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#020</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Thích Nghi Cục Bộ</h3>
+      <span class="card-en">(Local Adaptation)</span>
+    </div>
+    <p class="card-summary">Tác nhân tối ưu hóa cho môi trường cục bộ, không nhất thiết cho hệ thống tổng thể.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Thích nghi cục bộ (Local Adaptation)</strong> giải thích nhiều hiện tượng phản trực giác: tại sao điều tốt cho cá nhân lại hại cho tập thể; tại sao giải pháp hiệu quả ở một nơi lại thất bại ở nơi khác. Mỗi tác nhân tối ưu hóa cho môi trường vi mô của mình.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Bi kịch công địa (Tragedy of the Commons): mỗi nông dân tối ưu hóa cục bộ bằng cách thả thêm gia súc, nhưng toàn bộ đồng cỏ bị phá hủy — thích nghi cục bộ hủy hoại hệ thống toàn cục.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế cơ chế khuyến khích tối ưu hóa hệ thống, không chỉ cục bộ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="021">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#021</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Đồng Tiến Hóa</h3>
+      <span class="card-en">(Co-evolution)</span>
+    </div>
+    <p class="card-summary">Các tác nhân tiến hóa song song, mỗi sự thay đổi của một tác nhân tạo áp lực thay đổi cho tác nhân khác.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Đồng tiến hóa (Co-evolution)</strong> xảy ra khi hai hay nhiều tác nhân/loài tiến hóa phản ứng với nhau. Không có tiến hóa đơn độc — mọi thích nghi đều tạo ra áp lực thích nghi mới cho toàn hệ sinh thái. Cuộc đua vũ trang tiến hóa không bao giờ kết thúc.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Hoa và ong bướm: hoa tiến hóa màu sắc/mùi hương hấp dẫn côn trùng; côn trùng tiến hóa khả năng tìm mật hiệu quả hơn. Mỗi bên thúc đẩy tiến hóa của bên kia trong vòng lặp hàng triệu năm.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Chiến lược của bạn luôn tiến hóa trong bối cảnh đối thủ cũng đang tiến hóa.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="022">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#022</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Cân Bằng Gián Đoạn</h3>
+      <span class="card-en">(Punctuated Equilibrium)</span>
+    </div>
+    <p class="card-summary">Tiến hóa không diễn ra đều đặn mà xen kẽ giữa giai đoạn ổn định dài và thay đổi đột biến ngắn.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Cân bằng gián đoạn (Punctuated Equilibrium)</strong> của Gould & Eldredge: hóa thạch cho thấy sinh vật ổn định hàng triệu năm, rồi thay đổi nhanh chóng trong thời gian ngắn. Điều này cũng đúng với lịch sử, công nghệ, và kinh doanh.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Công nghệ điện thoại ổn định 100 năm (1876-1970s) → đột biến với điện thoại di động (1990s) → đột biến lần hai với smartphone (2007-nay). Giai đoạn gián đoạn ngắn thay đổi mọi thứ.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong giai đoạn gián đoạn, tốc độ thích nghi quan trọng hơn hiệu quả tối ưu.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="023">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#023</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Sự Thích Nghi Trước</h3>
+      <span class="card-en">(Exaptation)</span>
+    </div>
+    <p class="card-summary">Đặc điểm tiến hóa cho một mục đích được tái sử dụng cho mục đích hoàn toàn khác.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Sự thích nghi trước (Exaptation)</strong> là khi một đặc điểm vốn phát triển cho một chức năng được 'tái mục đích' cho chức năng khác. Lông vũ ban đầu tiến hóa để giữ nhiệt, sau đó được tái sử dụng cho bay. Điều này cũng giải thích nhiều đổi mới công nghệ.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>SMS được thiết kế cho kỹ sư viễn thông kiểm tra mạng lưới — sau đó người dùng tái mục đích thành phương tiện giao tiếp hàng ngày, tạo ra ngành công nghiệp tỷ đô.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Quan sát cách người dùng 'tái mục đích' sản phẩm — thường đó là hướng đổi mới tốt nhất.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="024">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#024</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Đa Hướng Tiến Hóa</h3>
+      <span class="card-en">(Adaptive Radiation)</span>
+    </div>
+    <p class="card-summary">Từ một tổ tiên chung, nhiều dạng thích nghi với các hốc sinh thái khác nhau phát triển song song.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Đa hướng tiến hóa (Adaptive Radiation)</strong> xảy ra khi một nhóm sinh vật đa dạng hóa nhanh chóng để lấp đầy nhiều hốc sinh thái. Điều này song hành với sự bùng nổ trong công nghệ và kinh doanh khi một nền tảng mới mở ra không gian khả năng mới.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Sau khi Cambrian explosion (~540 triệu năm trước), sự sống đa dạng hóa từ vài dạng đơn giản thành hầu hết mọi phylum động vật ngày nay — trong 'chớp mắt' địa chất học.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tìm kiếm các nền tảng mới tạo ra không gian cho adaptive radiation.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="025">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#025</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tối Ưu Hóa Cục Bộ</h3>
+      <span class="card-en">(Local Optima)</span>
+    </div>
+    <p class="card-summary">Hệ thống thích nghi có thể bị kẹt tại điểm tối ưu cục bộ, không đạt được tối ưu toàn cục.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tối ưu cục bộ (Local Optima)</strong> là bẫy tiến hóa: hệ thống leo lên đỉnh gần nhất và bị mắc kẹt vì mọi bước nhỏ đều là đi xuống — dù có đỉnh cao hơn nhiều ở phía xa. Thoát khỏi local optima đòi hỏi 'cú nhảy' vào vùng không chắc chắn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Kodak tối ưu cực kỳ tốt cho business nhiếp ảnh phim (local optima) — đây chính là lý do họ không thể chuyển sang nhiếp ảnh số dù họ là người phát minh ra nó năm 1975.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Sẵn sàng giảm hiệu quả ngắn hạn để thoát khỏi local optima.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="026">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#026</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tiến Hóa Trung Tính</h3>
+      <span class="card-en">(Neutral Evolution)</span>
+    </div>
+    <p class="card-summary">Nhiều biến đổi gen không có lợi hay có hại — chúng trôi dạt ngẫu nhiên, duy trì đa dạng tiềm tàng.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tiến hóa trung tính (Neutral Evolution)</strong> của Kimura: phần lớn biến đổi di truyền không bị chọn lọc tự nhiên tác động — chúng 'trôi dạt' ngẫu nhiên. Điều này tạo ra kho đa dạng tiềm ẩn, có thể trở nên có lợi khi môi trường thay đổi.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nhân viên học các kỹ năng 'vô dụng' hiện tại — như người kỹ sư học thiết kế đồ họa vì thích. Khi công ty cần AI + Design, kỹ năng trung tính bỗng trở thành lợi thế cạnh tranh.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Khuyến khích học hỏi đa dạng ngay cả khi không thấy ứng dụng ngay.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="027">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#027</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Học Tăng Cường</h3>
+      <span class="card-en">(Reinforcement Learning)</span>
+    </div>
+    <p class="card-summary">Tác nhân học cách hành động qua thử nghiệm, nhận phản hồi và điều chỉnh để tối đa hóa phần thưởng.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Học tăng cường (Reinforcement Learning)</strong> là cơ chế thích nghi phổ quát trong CAS: thử → nhận tín hiệu phản hồi → điều chỉnh chiến lược → thử lại. Không cần biết đáp án trước, chỉ cần tín hiệu phản hồi đủ tốt và đủ nhanh.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Trẻ em học đi: ngã → đau (tín hiệu âm) → điều chỉnh tư thế → thử lại → dần dần tìm được thế cân bằng. Không ai dạy bằng công thức — phản hồi trực tiếp dạy.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế vòng phản hồi nhanh và rõ ràng để tăng tốc độ học.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="028">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#028</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Thích Nghi Văn Hóa</h3>
+      <span class="card-en">(Cultural Adaptation)</span>
+    </div>
+    <p class="card-summary">Văn hóa tiến hóa nhanh hơn gen, là cơ chế thích nghi chính của con người với môi trường.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Thích nghi văn hóa (Cultural Adaptation)</strong> là 'tiến hóa Lamarck' của loài người: chúng ta học hỏi, truyền đạt và tích lũy kiến thức qua thế hệ mà không cần đột biến gen. Tốc độ thích nghi văn hóa nhanh hơn tiến hóa sinh học hàng nghìn lần.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Người Inuit thích nghi với Bắc Cực không phải bằng gen mà bằng văn hóa: kỹ thuật xây igloo, may quần áo da, săn bắt trên băng — được truyền qua học hỏi, không qua DNA.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đầu tư vào văn hóa học hỏi — đó là cơ chế thích nghi nhanh nhất.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="029">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#029</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Vùng Cận Phát Triển</h3>
+      <span class="card-en">(Zone of Proximal Development)</span>
+    </div>
+    <p class="card-summary">Học tập hiệu quả nhất ở ranh giới giữa những gì đã biết và những gì vừa tầm với.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Vùng cận phát triển (Zone of Proximal Development)</strong> của Vygotsky áp dụng vào CAS: hệ thống thích nghi tốt nhất khi thách thức vừa đủ — không quá dễ (không học), không quá khó (sụp đổ). Đây là 'biên hỗn loạn' của quá trình học.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Trò chơi điện tử được thiết kế theo nguyên lý này: độ khó tăng dần theo kỹ năng người chơi. Quá dễ = chán. Quá khó = bỏ. Vừa đủ = 'flow state' — học nhanh nhất.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế thách thức ở biên của năng lực hiện tại.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="030">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#030</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tiến Hóa Modular</h3>
+      <span class="card-en">(Modular Evolution)</span>
+    </div>
+    <p class="card-summary">Hệ thống phức tạp tiến hóa bằng cách kết hợp lại các module đã có, không chỉ tạo mới từ đầu.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tiến hóa modular (Modular Evolution)</strong> giải thích tại sao tiến hóa nhanh hơn dự đoán: thay vì tối ưu hóa toàn bộ hệ thống, tiến hóa tái sử dụng và kết hợp lại các module đã được kiểm chứng. Mắt tiến hóa độc lập hơn 40 lần ở các dòng sinh vật khác nhau — vì cùng 'toolkit' gen.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Công ty phần mềm phát triển bằng cách kết hợp API, thư viện mã nguồn mở, và microservices — không viết lại từ đầu. Modular evolution trong action.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Xây dựng và tái sử dụng module tốt hơn là tối ưu hóa toàn diện.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="031">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#031</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hiệu Ứng Baldwin</h3>
+      <span class="card-en">(Baldwin Effect)</span>
+    </div>
+    <p class="card-summary">Học hỏi cá nhân có thể hướng dẫn tiến hóa gen theo thời gian dài.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hiệu ứng Baldwin (Baldwin Effect)</strong>: khả năng học hỏi của cá thể không chỉ giúp sinh tồn trước mắt mà còn thay đổi áp lực chọn lọc gen theo thế hệ. Môi trường mà học tập tạo ra sẽ chọn lọc cho gen hỗ trợ học tập đó.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Tổ tiên người học nói chuyện bằng nỗ lực → ngôn ngữ nâng cao sinh tồn → chọn lọc gen cho bộ máy ngôn ngữ tốt hơn → học ngôn ngữ dễ hơn → vòng lặp tích cực hàng triệu năm.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Học hỏi hôm nay định hình năng lực tương lai — đầu tư vào học.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="032">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#032</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tính Mềm Dẻo Kiểu Hình</h3>
+      <span class="card-en">(Phenotypic Plasticity)</span>
+    </div>
+    <p class="card-summary">Cùng một kiểu gen có thể biểu hiện khác nhau tùy theo điều kiện môi trường.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tính mềm dẻo kiểu hình (Phenotypic Plasticity)</strong> là khả năng của sinh vật thay đổi biểu hiện mà không thay đổi gen. Đây là cơ chế thích nghi nhanh chóng trong thế giới biến động. Con người sở hữu mức độ plasticity cao nhất trong tự nhiên.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Con người sinh ra ở độ cao lớn phát triển dung tích phổi lớn hơn — cùng gen nhưng môi trường khác tạo ra kiểu hình khác. Tương tự, trẻ em học nhiều ngôn ngữ dễ hơn người lớn vì não còn 'mềm dẻo'.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Môi trường ban đầu quan trọng — nó định hình biểu hiện của tiềm năng.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="033">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#033</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tiến Hóa Hội Tụ</h3>
+      <span class="card-en">(Convergent Evolution)</span>
+    </div>
+    <p class="card-summary">Các loài không có quan hệ họ hàng tiến hóa các giải pháp tương tự cho cùng vấn đề.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tiến hóa hội tụ (Convergent Evolution)</strong> cho thấy không gian giải pháp có 'núi' — một số thiết kế tối ưu xuất hiện nhiều lần độc lập vì chúng giải quyết tốt nhất một vấn đề cụ thể. Đây là bằng chứng cho tính có thể khám phá của thiết kế tối ưu.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Cá mập (cá) và cá heo (thú) có thân hình gần giống nhau dù không có quan hệ gần. Cả hai tiến hóa độc lập đến cùng giải pháp cho bài toán 'di chuyển nhanh trong nước'.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Khi nhiều người độc lập đến cùng giải pháp, đó thường là giải pháp tốt.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="034">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#034</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Áp Lực Đỏ Nữ Hoàng</h3>
+      <span class="card-en">(Red Queen Effect)</span>
+    </div>
+    <p class="card-summary">Phải liên tục tiến hóa chỉ để duy trì vị trí tương đối trong môi trường cạnh tranh đang thay đổi.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Áp lực Đỏ Nữ Hoàng (Red Queen Effect)</strong> từ Lewis Carroll: 'phải chạy hết sức mới đứng yên tại chỗ.' Trong môi trường cạnh tranh đồng tiến hóa, cải tiến không làm bạn tiến lên — nó chỉ ngăn bạn tụt hậu.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Phần mềm diệt virus phải liên tục cập nhật không phải vì tiến bộ — vì virus cũng liên tục tiến hóa. Đứng yên = thất bại. Chạy nhanh = giữ nguyên vị trí.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong thị trường cạnh tranh, đổi mới liên tục là yêu cầu tối thiểu để tồn tại.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat2" data-id="035">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #16a34a">
+    <div class="card-meta">
+      <span class="card-num">#035</span>
+      <span class="card-cat" style="background:#16a34a20; color:#16a34a">🧬 Tiến Hóa & Thích Nghi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Niche Construction</h3>
+      <span class="card-en">(Niche Construction)</span>
+    </div>
+    <p class="card-summary">Sinh vật không chỉ thích nghi với môi trường — chúng thay đổi môi trường để phù hợp với mình.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Niche Construction</strong>: tiến hóa không phải một chiều. Sinh vật tích cực xây dựng và thay đổi hốc sinh thái của mình, tạo ra áp lực chọn lọc mới cho chính mình và các loài khác. Con người là loài niche construction vĩ đại nhất.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Con người xây thành phố, tạo ra môi trường hoàn toàn nhân tạo, rồi tiến hóa để thích nghi với môi trường họ tự tạo ra — bệnh béo phì, cận thị, trầm cảm đô thị là sản phẩm phụ của niche construction.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Bạn không chỉ thích nghi với thế giới — bạn tạo ra thế giới bạn phải thích nghi.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="036">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#036</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Lý Thuyết Mạng Lưới</h3>
+      <span class="card-en">(Network Theory)</span>
+    </div>
+    <p class="card-summary">Nghiên cứu cấu trúc và hành vi của các hệ thống gồm các nút kết nối với nhau.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Lý thuyết mạng lưới (Network Theory)</strong> cung cấp ngôn ngữ toán học để mô tả CAS. Mọi hệ thống phức tạp — não, internet, hệ sinh thái, thị trường, mạng xã hội — đều có thể phân tích dưới dạng mạng: các nút (nodes) và các cạnh (edges) nối chúng.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Não người: 86 tỷ tế bào thần kinh kết nối qua 100 nghìn tỷ synapse. Cấu trúc mạng này — không phải số lượng tế bào — tạo ra trí tuệ. Cách kết nối quan trọng hơn số lượng nút.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Phân tích cấu trúc mạng trước khi tối ưu hóa các nút riêng lẻ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="037">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#037</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Mạng Phi Quy Mô</h3>
+      <span class="card-en">(Scale-Free Network)</span>
+    </div>
+    <p class="card-summary">Mạng trong đó một số ít nút (hub) có rất nhiều kết nối, đa số nút có rất ít.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Mạng phi quy mô (Scale-Free Network)</strong> tuân theo phân phối lũy thừa (power law): một số hub có hàng nghìn kết nối trong khi đa số nút chỉ có vài kết nối. Đây là cấu trúc phổ biến nhất trong các mạng tự nhiên và xã hội.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Internet: Google, Amazon, Facebook là hub khổng lồ với hàng tỷ liên kết; hàng triệu trang web nhỏ chỉ có vài chục liên kết. Cấu trúc này xuất hiện tự nhiên qua cơ chế 'giàu càng thêm giàu'.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong mạng phi quy mô, tiếp cận hub có đòn bẩy lớn hơn tiếp cận nhiều nút nhỏ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="038">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#038</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Thế Giới Nhỏ</h3>
+      <span class="card-en">(Small World Network)</span>
+    </div>
+    <p class="card-summary">Trong hầu hết các mạng xã hội, bất kỳ hai người nào cũng có thể kết nối qua ít trung gian.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Thế giới nhỏ (Small World Network)</strong> của Watts & Strogatz: mạng kết hợp cụm địa phương chặt chẽ với một số kết nối đường dài ngẫu nhiên. Kết quả: khoảng cách trung bình giữa các nút ngắn đến kinh ngạc — '6 bậc phân cách' trong xã hội loài người.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Thí nghiệm Milgram: gửi thư từ Nebraska đến Boston thông qua người quen của người quen — trung bình chỉ cần 6 bước. Facebook: khoảng cách trung bình giữa hai người dùng bất kỳ là 3.57.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Các cầu nối yếu (weak ties) kết nối cụm địa phương là những kết nối có giá trị nhất.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="039">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#039</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Cầu Nối Yếu</h3>
+      <span class="card-en">(Strength of Weak Ties)</span>
+    </div>
+    <p class="card-summary">Các mối quan hệ lỏng lẻo thường mang thông tin mới và cơ hội hơn là mối quan hệ thân thiết.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Sức mạnh của cầu nối yếu (Strength of Weak Ties)</strong> của Granovetter: bạn thân chia sẻ cùng mạng lưới xã hội → bạn biết những gì họ biết. Người quen biết → thuộc mạng lưới khác → mang thông tin không trùng lặp, cơ hội mới, quan điểm khác biệt.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nghiên cứu của Granovetter: 56% người tìm được việc qua mạng lưới cá nhân, và trong số đó, phần lớn qua người quen biết (weak ties) chứ không phải bạn thân (strong ties).</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đầu tư duy trì mạng lưới người quen biết rộng, không chỉ sâu.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="040">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#040</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hiệu Ứng Mạng</h3>
+      <span class="card-en">(Network Effect)</span>
+    </div>
+    <p class="card-summary">Giá trị của sản phẩm/dịch vụ tăng theo số lượng người dùng — tạo ra lợi thế cạnh tranh tự nhiên.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hiệu ứng mạng (Network Effect)</strong> của Metcalfe: giá trị mạng tỷ lệ với bình phương số người dùng. Khi mạng đủ lớn, nó tạo ra rào cản gia nhập gần như không thể vượt qua — vì người dùng mới tự nhiên chọn mạng đã có nhiều người.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>WhatsApp: có giá trị vì mọi người dùng WhatsApp. Nếu chỉ 100 người dùng, nó vô nghĩa. Facebook mua WhatsApp với 19 tỷ USD không phải vì code — vì 600 triệu người dùng đã có.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong kinh doanh mạng lưới, chiếm thị phần sớm quan trọng hơn tối ưu sản phẩm.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="041">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#041</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Nút Quan Trọng</h3>
+      <span class="card-en">(Critical Node)</span>
+    </div>
+    <p class="card-summary">Một số nút trong mạng đóng vai trò không thể thay thế — loại bỏ chúng sẽ phá vỡ toàn mạng.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Nút quan trọng (Critical Node)</strong> là điểm dễ tổn thương của mạng lưới. Mạng phi quy mô rất bền vững trước mất mát ngẫu nhiên (vì phần lớn nút không quan trọng), nhưng cực kỳ dễ bị tổn thương trước tấn công có chủ đích nhắm vào hub.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Xóa 80% trang web ngẫu nhiên: internet vẫn hoạt động vì hầu hết là nút nhỏ không quan trọng. Nhưng xóa Google + Amazon + Cloudflare: phần lớn internet sụp đổ.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Bảo vệ các nút quan trọng và đảm bảo dự phòng cho chúng.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="042">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#042</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Lây Lan Mạng</h3>
+      <span class="card-en">(Contagion)</span>
+    </div>
+    <p class="card-summary">Thông tin, hành vi, cảm xúc và dịch bệnh lan truyền qua mạng lưới theo cơ chế tương tự.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Lây lan mạng (Contagion)</strong> nghiên cứu cách các 'mầm bệnh' — dù là virus, ý tưởng, hành vi hay tin tức — lan qua mạng. Mô hình SIR (Susceptible-Infected-Recovered) mô tả toán học của sự lây lan. Cấu trúc mạng quyết định tốc độ và phạm vi lây lan.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Tin giả lây lan nhanh hơn tin thật trên Twitter vì kích thích cảm xúc mạnh hơn (sợ hãi, tức giận, ngạc nhiên) → được chia sẻ nhiều hơn → tiếp cận hub → lây lan theo cấp số nhân.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong mạng lưới, thiết kế 'ma sát' đúng chỗ để kiểm soát lây lan có hại.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="043">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#043</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Cụm Hóa</h3>
+      <span class="card-en">(Clustering)</span>
+    </div>
+    <p class="card-summary">Xu hướng các nút kết nối với nhau thành cụm dày đặc, tạo ra 'bong bóng thông tin'.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Cụm hóa (Clustering)</strong> trong mạng xã hội phản ánh nguyên lý 'đồng loại tụ hội' (homophily): chúng ta kết nối với người giống mình. Kết quả: các cụm đồng nhất cao, thông tin lan nhanh trong cụm nhưng chậm qua cụm.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Mạng xã hội chính trị: người bảo thủ và người tiến bộ sống trong hai 'bong bóng thông tin' gần như tách biệt. Cùng sự kiện được diễn giải hoàn toàn khác nhau trong hai cụm.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Phá vỡ bong bóng thông tin bằng cách chủ động kết nối với các cụm khác.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="044">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#044</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Trung Tâm Mạng</h3>
+      <span class="card-en">(Network Centrality)</span>
+    </div>
+    <p class="card-summary">Các thước đo khác nhau về tầm quan trọng của nút: mức độ, sự gần gũi, trung gian.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Trung tâm mạng (Network Centrality)</strong> có nhiều định nghĩa: <em>Degree centrality</em> — số kết nối trực tiếp. <em>Betweenness centrality</em> — số đường ngắn nhất đi qua nút này. <em>Closeness centrality</em> — khoảng cách trung bình đến mọi nút khác. Mỗi loại phản ánh loại ảnh hưởng khác nhau.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Trong tổ chức: CEO có degree centrality cao (nhiều báo cáo trực tiếp). Nhân viên trung gian kết nối các phòng ban có betweenness centrality cao — thường là nguồn thông tin và ảnh hưởng thực sự.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tìm người có betweenness centrality cao — họ là cầu nối thực sự của tổ chức.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="045">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#045</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Phân Phối Lũy Thừa</h3>
+      <span class="card-en">(Power Law Distribution)</span>
+    </div>
+    <p class="card-summary">Trong nhiều hiện tượng tự nhiên và xã hội, một số ít cá thể chiếm phần lớn tổng thể.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Phân phối lũy thừa (Power Law Distribution)</strong> hay quy tắc Pareto: 20% nguyên nhân tạo 80% kết quả. Điều này xuất hiện ở: thu nhập, thành phố, từ ngữ được dùng, địa chấn, doanh thu công ty, lượt xem video... Không phải trùng hợp — là cơ chế nổi sinh.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Top 1% nhạc sĩ trên Spotify kiếm 90% doanh thu. 1% từ ngữ tiếng Anh chiếm 50% mọi văn bản. 1% bài báo khoa học nhận 50% lượt trích dẫn. Power law ở khắp nơi.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tập trung nguồn lực vào 20% có đòn bẩy cao nhất.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="046">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#046</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hiệu Ứng Cascading</h3>
+      <span class="card-en">(Cascade Effect)</span>
+    </div>
+    <p class="card-summary">Sự thất bại của một nút gây ra chuỗi phản ứng dây chuyền làm sụp đổ toàn hệ thống.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hiệu ứng cascading (Cascade Effect)</strong> xảy ra khi mạng lưới được kết nối quá chặt mà không có cơ chế ngăn chặn lan truyền. Một thất bại cục bộ kích hoạt thất bại ở nút lân cận, tạo làn sóng sụp đổ theo cấp số nhân.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Khủng hoảng tài chính 2008: Lehman Brothers sụp đổ → ngân hàng khác mất tin tưởng nhau → tín dụng đóng băng → doanh nghiệp không vay được → sa thải hàng loạt → tiêu dùng giảm → kinh tế toàn cầu suy thoái. Một điểm sụp đổ cascade toàn hệ thống.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế 'circuit breaker' — cơ chế ngắt lan truyền khi thất bại xảy ra.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="047">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#047</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Mạng Hai Chiều</h3>
+      <span class="card-en">(Bipartite Network)</span>
+    </div>
+    <p class="card-summary">Mạng gồm hai loại nút khác nhau, với cạnh chỉ kết nối giữa các loại (không trong cùng loại).</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Mạng hai chiều (Bipartite Network)</strong> xuất hiện khắp nơi: khách hàng ↔ sản phẩm, tác giả ↔ bài báo, bệnh nhân ↔ bác sĩ, người dùng ↔ nội dung. Phân tích cấu trúc hai chiều này tiết lộ cụm ẩn và mẫu hình không thấy trong phân tích đơn chiều.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Netflix recommendation: mạng hai chiều người dùng-phim. Người dùng với mẫu xem tương tự được nhóm lại → dùng để gợi ý phim từ 'người dùng giống bạn' đã xem.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Phân tích mạng hai chiều để phát hiện cụm ẩn và mẫu hình tiềm ẩn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="048">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#048</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tính Bền Vững Mạng</h3>
+      <span class="card-en">(Network Resilience)</span>
+    </div>
+    <p class="card-summary">Khả năng mạng duy trì chức năng khi bị tấn công hoặc khi mất nút/cạnh.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tính bền vững mạng (Network Resilience)</strong> phụ thuộc vào cấu trúc. Mạng ngẫu nhiên (random network) bền vững đều đặn. Mạng phi quy mô bền vững trước mất mát ngẫu nhiên nhưng dễ bị tổn thương trước tấn công nhắm hub. Thiết kế mạng bền vững đòi hỏi cân bằng giữa hiệu quả và dự phòng.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Lưới điện Mỹ: kiến trúc hub-and-spoke hiệu quả nhưng tấn công một số trạm biến áp lớn có thể gây blackout toàn quốc. Lưới điện phân tán bền vững hơn nhưng kém hiệu quả hơn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tối ưu hóa hiệu quả và bền vững là đánh đổi thiết kế cốt lõi.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="049">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#049</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Vốn Xã Hội</h3>
+      <span class="card-en">(Social Capital)</span>
+    </div>
+    <p class="card-summary">Giá trị tiềm ẩn trong mạng lưới quan hệ xã hội — nguồn lực vô hình nhưng có thực.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Vốn xã hội (Social Capital)</strong> của Putnam & Bourdieu: mạng lưới quan hệ là tài sản thực sự. Có hai loại: <em>Bonding capital</em> — trong cùng nhóm, tạo lòng tin và hỗ trợ. <em>Bridging capital</em> — kết nối các nhóm khác nhau, tạo thông tin và cơ hội mới.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nghiên cứu của Putnam: các cộng đồng có vốn xã hội cao (tham gia câu lạc bộ, chơi bowling cùng nhau) có kinh tế phát triển hơn, tội phạm thấp hơn, và sức khỏe cộng đồng tốt hơn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đầu tư xây dựng vốn xã hội — nó là cơ sở hạ tầng vô hình của thành công.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="050">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#050</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Cấu Trúc Lỗ Hổng</h3>
+      <span class="card-en">(Structural Holes)</span>
+    </div>
+    <p class="card-summary">Khoảng trống trong mạng lưới giữa các cụm không kết nối — cơ hội cho người lấp đầy khoảng trống.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Cấu trúc lỗ hổng (Structural Holes)</strong> của Burt: người kết nối các cụm không có quan hệ trực tiếp với nhau kiểm soát luồng thông tin và có lợi thế thông tin đặc biệt. Họ nghe nhiều quan điểm, thấy nhiều cơ hội, và có thể 'dịch thuật' giữa các nhóm.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nhân viên kết nối phòng kỹ thuật và phòng kinh doanh hiểu cả hai ngôn ngữ và nhu cầu — họ thấy cơ hội mà người trong từng cụm không thấy. Structural hole broker.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tìm và lấp đầy structural holes — đó là nguồn gốc của ý tưởng đột phá.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="051">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#051</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Lan Truyền Xã Hội</h3>
+      <span class="card-en">(Social Contagion)</span>
+    </div>
+    <p class="card-summary">Hành vi, cảm xúc và chuẩn mực xã hội lan truyền qua mạng giống như dịch bệnh.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Lan truyền xã hội (Social Contagion)</strong> của Christakis & Fowler: hạnh phúc, béo phì, hút thuốc, ly hôn, và nhiều hành vi lan truyền qua mạng xã hội đến 3 bậc quan hệ (bạn của bạn của bạn). Người xung quanh định hình ta sâu sắc hơn ta nghĩ.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nghiên cứu Framingham Heart Study: nếu bạn thân của bạn béo lên, nguy cơ bạn béo lên tăng 57%. Nếu bạn của bạn thân béo lên: tăng 20%. Đến bậc 3 vẫn còn hiệu ứng đo được.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Chọn môi trường xã hội cẩn thận — nó đang định hình bạn theo cách vô thức.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="052">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#052</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Mạng Sinh Học</h3>
+      <span class="card-en">(Biological Network)</span>
+    </div>
+    <p class="card-summary">Các mạng lưới trong cơ thể sống — gen, protein, chuyển hóa — tuân theo nguyên lý CAS.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Mạng sinh học (Biological Network)</strong> là CAS ở cấp độ phân tử. Mạng điều hòa gen: gen A bật/tắt gen B, gen B bật/tắt gen C — vòng phản hồi phức tạp tạo ra biệt hóa tế bào. Mạng trao đổi chất: hàng nghìn phản ứng hóa học tương tác tạo ra sự sống.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Ung thư là CAS thất bại: các tế bào ung thư 'hack' mạng tín hiệu để phát triển không kiểm soát. Điều trị ung thư hiệu quả nhắm vào các hub của mạng tín hiệu, không chỉ tiêu diệt tế bào.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Hiểu mạng lưới sinh học giúp thiết kế can thiệp y tế chính xác hơn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="053">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#053</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Đồng thuận Phân Tán</h3>
+      <span class="card-en">(Distributed Consensus)</span>
+    </div>
+    <p class="card-summary">Cách các hệ thống phân tán đạt được thỏa thuận mà không cần cơ quan trung tâm.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Đồng thuận phân tán (Distributed Consensus)</strong> là thách thức cốt lõi trong các hệ thống không có quyền lực trung tâm. Cơ chế như blockchain, gossip protocol, và bầu chọn Byzantine cho phép hàng nghìn nút không tin nhau đạt được đồng thuận về sự thật.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Bitcoin: hàng triệu máy tính trên toàn cầu không biết nhau đồng thuận về lịch sử giao dịch mà không cần ngân hàng trung ương — qua proof-of-work và cơ chế chain dài nhất.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đồng thuận không cần quyền lực trung tâm — cần cơ chế khuyến khích đúng.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat3" data-id="054">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #9333ea">
+    <div class="card-meta">
+      <span class="card-num">#054</span>
+      <span class="card-cat" style="background:#9333ea20; color:#9333ea">🕸️ Mạng Lưới & Kết Nối</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Siêu Cơ Thể</h3>
+      <span class="card-en">(Superorganism)</span>
+    </div>
+    <p class="card-summary">Tập hợp sinh vật hành xử như một cơ thể thống nhất duy nhất thông qua phối hợp phi tập trung.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Siêu cơ thể (Superorganism)</strong> là ví dụ cực đoan của CAS: đàn kiến, tổ ong, hoặc thậm chí thành phố hoạt động như một 'sinh vật' với phân công lao động, truyền thông, và ra quyết định tập thể — không cần não trung tâm.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Tổ ong: 50,000 con ong đưa ra quyết định dân chủ về nơi làm tổ mới. Ong trinh sát tìm địa điểm, về nhảy điệu vũ để 'vận động', địa điểm nào được nhảy nhiều nhất thắng. Trí tuệ tập thể không cần lãnh đạo.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế cơ chế phối hợp phi tập trung để khai thác trí tuệ tập thể.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="055">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#055</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tư Duy Hệ Thống</h3>
+      <span class="card-en">(Systems Thinking)</span>
+    </div>
+    <p class="card-summary">Nhìn nhận vấn đề như một phần của hệ thống tương tác, không phải sự kiện đơn lẻ.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tư duy hệ thống (Systems Thinking)</strong> của Forrester & Meadows: thay vì phân tích từng phần riêng lẻ, nhìn thấy mối quan hệ, vòng phản hồi và hành vi nổi sinh. Câu hỏi cơ bản: 'Cấu trúc hệ thống nào đang tạo ra hành vi này?'</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nghèo đói: tư duy tuyến tính: 'người nghèo thiếu tiền → cho tiền'. Tư duy hệ thống: thiếu tiền + thiếu giáo dục + mạng lưới xã hội yếu + kỳ thị hệ thống → vòng phản hồi duy trì nghèo đói → cần can thiệp đa điểm.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Vẽ sơ đồ vòng nhân quả trước khi thiết kế giải pháp.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="056">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#056</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Độ Trễ Hệ Thống</h3>
+      <span class="card-en">(System Delay)</span>
+    </div>
+    <p class="card-summary">Thời gian giữa hành động và kết quả trong hệ thống — nguồn gốc của nhiều vấn đề quản lý.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Độ trễ hệ thống (System Delay)</strong> là nguyên nhân phổ biến của quyết định tồi: chúng ta hành động dựa trên thông tin cũ, kết quả đến muộn khi chúng ta đã quên nguyên nhân, và vòng điều chỉnh dao động quá mức vì phản ứng với trạng thái đã thay đổi.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Tắc đường trên cao tốc 'phantom': một xe phanh đột ngột → xe sau phanh mạnh hơn → xe sau nữa phanh mạnh hơn nữa → cách 2km, xe phải dừng hoàn toàn dù không có tai nạn. Độ trễ khuếch đại tín hiệu.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Nhận diện và đặt tên cho các độ trễ trong hệ thống trước khi ra quyết định.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="057">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#057</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Kho Chứa và Dòng Chảy</h3>
+      <span class="card-en">(Stocks and Flows)</span>
+    </div>
+    <p class="card-summary">Hệ thống được mô tả bởi các kho chứa (tích lũy) và dòng chảy (tốc độ thay đổi) giữa chúng.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Kho chứa (Stocks)</strong> là những gì tích lũy theo thời gian: nước trong hồ chứa, tiền trong tài khoản, kiến thức trong đầu, niềm tin vào thương hiệu. <strong>Dòng chảy (Flows)</strong> là tốc độ thay đổi: nước vào/ra, thu nhập/chi tiêu, học tập/quên lãng. Hành vi của hệ thống là tương tác giữa stocks và flows.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Biến đổi khí hậu: CO2 trong khí quyển là stock. Phát thải là dòng vào, hấp thụ tự nhiên là dòng ra. Dù giảm phát thải 50%, stock vẫn tăng vì dòng vào > dòng ra — độ trễ hệ thống.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Xác định các stocks quan trọng và flows ảnh hưởng đến chúng.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="058">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#058</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Điểm Đòn Bẩy</h3>
+      <span class="card-en">(Leverage Points)</span>
+    </div>
+    <p class="card-summary">Vị trí trong hệ thống mà can thiệp nhỏ tạo ra thay đổi lớn — nhưng thường phản trực giác.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Điểm đòn bẩy (Leverage Points)</strong> của Donella Meadows: 12 loại can thiệp xếp theo sức mạnh. Các điểm đòn bẩy yếu (thay đổi thông số, kho chứa) dễ thấy nhưng ít hiệu quả. Điểm đòn bẩy mạnh (thay đổi cấu trúc vòng phản hồi, mục tiêu hệ thống, tư duy nền tảng) khó thấy nhưng thay đổi tất cả.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Thay đổi lãi suất (thông số) ít hiệu quả hơn thay đổi cấu trúc ngân hàng (cấu trúc). Thay đổi luật (quy tắc) ít hiệu quả hơn thay đổi hệ thống giá trị xã hội (tư duy nền tảng). Giáo dục > Luật pháp.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tìm điểm đòn bẩy cao nhất — thường là thay đổi tư duy, không thay đổi thông số.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="059">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#059</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Bẫy Hệ Thống</h3>
+      <span class="card-en">(System Traps)</span>
+    </div>
+    <p class="card-summary">Cấu trúc hệ thống phổ biến tạo ra hành vi không mong muốn, lặp đi lặp lại.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Bẫy hệ thống (System Traps)</strong> của Meadows là các 'archetype' hệ thống tạo ra hành vi xấu: Policy resistance (giải pháp làm tệ hơn), Tragedy of Commons (bi kịch công địa), Drift to Low Performance (trôi dạt về kém cỏi), Escalation (leo thang), Success to the Successful (thành công tích lũy thêm thành công).</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>'Drift to Low Performance': tiêu chuẩn được đặt dựa trên thực tế hiện tại. Khi hiệu suất giảm, tiêu chuẩn giảm để 'thực tế hơn'. Tiêu chuẩn thấp hơn dẫn đến hiệu suất thấp hơn. Vòng xoáy đi xuống.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Nhận diện bẫy hệ thống đang hoạt động trong tổ chức/cuộc sống của bạn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="060">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#060</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Vòng Tăng Cường</h3>
+      <span class="card-en">(Reinforcing Loop)</span>
+    </div>
+    <p class="card-summary">Vòng phản hồi khuếch đại thay đổi theo cùng chiều — tạo tăng trưởng hoặc sụp đổ theo cấp số nhân.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Vòng tăng cường (Reinforcing Loop)</strong> hay vòng phản hồi dương: A tăng → B tăng → A tăng thêm. Trong tự nhiên, vòng tăng cường luôn bị vòng cân bằng giới hạn cuối cùng. Không kiểm soát được, nó dẫn đến tăng trưởng không giới hạn hoặc sụp đổ hoàn toàn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Vòng tăng cường tốt: đọc sách → hiểu biết tăng → đọc hiểu nhanh hơn → đọc nhiều hơn → hiểu biết tăng thêm. Vòng tăng cường xấu: stress → ăn nhiều → thừa cân → stress hơn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Nhận diện và nuôi dưỡng vòng tăng cường tích cực trong cuộc sống.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="061">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#061</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Vòng Cân Bằng</h3>
+      <span class="card-en">(Balancing Loop)</span>
+    </div>
+    <p class="card-summary">Vòng phản hồi chống lại thay đổi, đưa hệ thống về trạng thái mục tiêu.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Vòng cân bằng (Balancing Loop)</strong> hay vòng phản hồi âm: khi hệ thống lệch khỏi mục tiêu, tạo ra áp lực đưa nó về. Đây là cơ chế tự điều chỉnh phổ quát trong tự nhiên. Hiệu quả phụ thuộc vào: độ chính xác của tín hiệu, tốc độ phản hồi, và hiệu quả của hành động điều chỉnh.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Hệ thống điều hòa: nhiệt độ tăng → điều hòa bật → nhiệt độ giảm → điều hòa tắt. Đơn giản nhưng là nguyên mẫu của mọi cơ chế tự điều chỉnh từ hormone đến lãi suất ngân hàng.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế vòng cân bằng rõ ràng cho mọi hệ thống cần kiểm soát.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="062">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#062</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Giới Hạn Tăng Trưởng</h3>
+      <span class="card-en">(Limits to Growth)</span>
+    </div>
+    <p class="card-summary">Mọi vòng tăng cường cuối cùng gặp giới hạn — tài nguyên, không gian, hoặc phản ứng của môi trường.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Giới hạn tăng trưởng (Limits to Growth)</strong> của Club of Rome: tăng trưởng theo cấp số nhân trong thế giới hữu hạn luôn va chạm với giới hạn. Phản ứng của hệ thống: giảm tốc, dao động, hoặc sụp đổ. Nhận diện giới hạn sớm cho phép chuyển đổi thay vì va chạm.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>S-curve của dân số: tăng nhanh khi tài nguyên dồi dào, chậm dần khi tiếp cận giới hạn, ổn định khi cân bằng. Vi khuẩn trong đĩa petri, thành phố, công ty, và hầu hết tăng trưởng sinh học đều theo S-curve.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Nhận diện giới hạn tiếp theo và bắt đầu chuẩn bị trước khi va chạm.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="063">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#063</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hành Vi Phản Trực Giác</h3>
+      <span class="card-en">(Counterintuitive Behavior)</span>
+    </div>
+    <p class="card-summary">Hệ thống phức tạp thường phản ứng ngược với kỳ vọng trực giác — can thiệp gây ra điều ngược lại.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hành vi phản trực giác (Counterintuitive Behavior)</strong> của Forrester: trong hệ thống phức tạp, giải pháp hiển nhiên thường làm tệ hơn vì kích hoạt vòng phản hồi không mong đoán. Điều này giải thích tại sao nhiều chính sách tốt lòng tạo ra hệ quả ngược.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Xây thêm đường để giảm tắc đường (Braess paradox): thực tế có thể làm tăng tắc đường vì thu hút thêm xe. Bảo hiểm thất nghiệp quá hào phóng tạo ra khuyến khích thất nghiệp lâu hơn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Kiểm tra giả thuyết can thiệp bằng mô hình trước khi triển khai quy mô lớn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="064">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#064</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Điểm Giới Hạn</h3>
+      <span class="card-en">(Tipping Point)</span>
+    </div>
+    <p class="card-summary">Ngưỡng mà tại đó hệ thống chuyển trạng thái đột ngột và thường không thể đảo ngược.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Điểm giới hạn (Tipping Point)</strong> của Gladwell & Schelling: hệ thống có thể chịu đựng áp lực đến một điểm nhất định, rồi đột ngột 'lật' sang trạng thái mới. Đặc biệt nguy hiểm vì: khó phát hiện trước, thường không thể đảo ngược sau.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Hồ algae bloom: nước sạch dù tải lượng phú dưỡng tăng dần, rồi vượt ngưỡng → toàn hồ chuyển sang xanh lam trong vài ngày. Đã xảy ra, gần như không thể phục hồi vì vòng phản hồi mới.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tìm dấu hiệu cảnh báo sớm của tipping point trước khi đến ngưỡng.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="065">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#065</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Trễ Phản Hồi</h3>
+      <span class="card-en">(Feedback Delay)</span>
+    </div>
+    <p class="card-summary">Độ trễ trong vòng phản hồi gây ra dao động và quyết định dựa trên thông tin lỗi thời.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Trễ phản hồi (Feedback Delay)</strong> là nguyên nhân của dao động trong nhiều hệ thống. Vòng cân bằng với độ trễ lớn sẽ vượt mục tiêu, điều chỉnh ngược chiều, vượt mục tiêu lần nữa — tạo ra dao động xung quanh mục tiêu thay vì tiếp cận mượt mà.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Shower oscillation: nước lạnh → vặn nóng thêm → chờ → vẫn lạnh → vặn nóng hơn nữa → cuối cùng nước nóng đến tận Thái Bình Dương. Độ trễ giữa điều chỉnh và phản hồi gây dao động.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Giảm độ trễ trong vòng phản hồi để cải thiện khả năng kiểm soát.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="066">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#066</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Kiến Trúc Lựa Chọn</h3>
+      <span class="card-en">(Choice Architecture)</span>
+    </div>
+    <p class="card-summary">Cách trình bày các lựa chọn ảnh hưởng mạnh đến quyết định — thiết kế môi trường tác động hành vi.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Kiến trúc lựa chọn (Choice Architecture)</strong> của Thaler & Sunstein: bố cục, thứ tự mặc định, và cách trình bày lựa chọn định hình quyết định sâu sắc. Người thiết kế hệ thống không thể tránh ảnh hưởng này — câu hỏi chỉ là ảnh hưởng theo hướng nào.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Đăng ký nội tạng: nước để mặc định 'không đồng ý' có tỷ lệ đăng ký ~17%. Nước để mặc định 'đồng ý' (opt-out): ~82%. Cùng quyền tự do, khác kiến trúc lựa chọn → khác kết quả 5 lần.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế môi trường (choice architecture) để hỗ trợ hành vi mong muốn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="067">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#067</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Quán Tính Hệ Thống</h3>
+      <span class="card-en">(System Inertia)</span>
+    </div>
+    <p class="card-summary">Xu hướng hệ thống tiếp tục theo quỹ đạo hiện tại, cưỡng lại sự thay đổi.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Quán tính hệ thống (System Inertia)</strong> xuất phát từ nhiều nguồn: kho chứa lớn (thay đổi chậm), vòng phản hồi ổn định hóa mạnh, path dependency, và kháng cự tâm lý từ tác nhân. Hiểu quán tính giúp thiết kế chiến lược thay đổi thực tế.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Chuyển đổi năng lượng từ than sang tái tạo: không chỉ cần công nghệ tốt hơn mà phải vượt qua: cơ sở hạ tầng than đã đầu tư, lợi ích nhóm ngành than, thói quen tiêu dùng, và hệ thống lưới điện thiết kế cho than.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đừng đánh giá thấp quán tính — hãy thiết kế chiến lược thay đổi đủ mạnh để vượt qua nó.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="068">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#068</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Ngưỡng Tới Hạn</h3>
+      <span class="card-en">(Critical Threshold)</span>
+    </div>
+    <p class="card-summary">Điểm mà tại đó thêm một đơn vị đầu vào tạo ra sự thay đổi chất lượng, không chỉ số lượng.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Ngưỡng tới hạn (Critical Threshold)</strong> là nơi hệ thống chuyển phase — như nước đóng băng ở 0°C, không phải ở -0.001°C. Trong hệ thống xã hội, nhiều hiện tượng có ngưỡng: dân số tối thiểu để ngôn ngữ sống sót, tỷ lệ tham gia tối thiểu để phong trào xã hội bùng nổ.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Phong trào xã hội: dưới 25% tham gia thường thất bại. Trên 25%, tham gia trở thành chuẩn mực xã hội và momentum tự duy trì. Đây là lý do nhiều cuộc cách mạng xảy ra đột ngột sau giai đoạn dài im lặng.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tìm ngưỡng tới hạn và thiết kế chiến lược để vượt qua nó.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="069">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#069</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Vòng Nhân Quả</h3>
+      <span class="card-en">(Causal Loop Diagram)</span>
+    </div>
+    <p class="card-summary">Công cụ trực quan hóa cấu trúc vòng phản hồi của hệ thống.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Vòng nhân quả (Causal Loop Diagram)</strong> là công cụ cơ bản của tư duy hệ thống: vẽ các biến và mũi tên (+/-) chỉ quan hệ nhân quả, nhận diện vòng tăng cường (R) và vòng cân bằng (B). Giúp thấy cấu trúc ẩn tạo ra hành vi quan sát được.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Vòng nhân quả của addiction: tiêu thụ chất → khoái cảm (R: tăng cường) → muốn tiêu thụ thêm → dung nạp tăng → cần nhiều hơn để cảm giác tương tự (B: cân bằng bị dịch) → escalation không kiểm soát.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Vẽ vòng nhân quả trước khi quyết định — nó tiết lộ cấu trúc ẩn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="070">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#070</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Thứ Bậc Nhu Cầu Hệ Thống</h3>
+      <span class="card-en">(System Hierarchy of Needs)</span>
+    </div>
+    <p class="card-summary">Hệ thống có các nhu cầu theo thứ bậc: tồn tại trước, rồi ổn định, rồi tối ưu hóa.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Thứ bậc nhu cầu hệ thống</strong> giống Maslow: hệ thống trước tiên cần đủ nguồn lực để tồn tại (viability), rồi đủ ổn định để dự đoán (stability), rồi mới có thể tối ưu hóa (efficiency) và thích nghi (adaptability). Can thiệp ở sai tầng thứ bậc sẽ thất bại.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Startup giai đoạn đầu cần sống sót (cash flow) trước khi tối ưu quy trình (efficiency). Tổ chức phi lợi nhuận cần ổn định tài chính trước khi đổi mới chương trình. Cấu trúc trước hiệu quả.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Chẩn đoán hệ thống đang ở tầng nào trước khi áp dụng can thiệp.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="071">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#071</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Lý Thuyết Trò Chơi Tiến Hóa</h3>
+      <span class="card-en">(Evolutionary Game Theory)</span>
+    </div>
+    <p class="card-summary">Nghiên cứu cách chiến lược tiến hóa trong quần thể thông qua chọn lọc tự nhiên.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Lý thuyết trò chơi tiến hóa (Evolutionary Game Theory)</strong> của Maynard Smith: thay vì giả định người chơi 'duy lý hoàn toàn', nghiên cứu chiến lược nào sống sót và lan truyền trong quần thể qua chọn lọc. Khái niệm trung tâm: ESS (Evolutionarily Stable Strategy) — chiến lược không thể bị xâm chiếm bởi bất kỳ chiến lược đột biến nào.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Diều hâu vs Bồ câu: quần thể thuần Diều hâu dễ bị xâm chiếm bởi Bồ câu (đỡ bị thương). Quần thể thuần Bồ câu dễ bị xâm chiếm bởi Diều hâu (thắng dễ). Trạng thái ESS: hỗn hợp Diều hâu/Bồ câu ổn định.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Chiến lược tốt không phải chiến lược tối ưu tuyệt đối — mà là chiến lược bền vững trong bối cảnh cụ thể.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="072">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#072</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Khả Năng Phục Hồi</h3>
+      <span class="card-en">(Resilience)</span>
+    </div>
+    <p class="card-summary">Khả năng hệ thống hấp thụ nhiễu loạn và phục hồi chức năng sau cú sốc.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Khả năng phục hồi (Resilience)</strong> có ba chiều: <em>Robustness</em> — chịu đựng không bị ảnh hưởng. <em>Rebound</em> — phục hồi nhanh sau cú sốc. <em>Reorganization</em> — thích nghi và trở nên tốt hơn sau sang chấn. Resilience không phải cứng nhắc — là linh hoạt sâu sắc.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nhật Bản sau động đất Tohoku 2011: cơ sở hạ tầng vật lý phục hồi nhanh (rebound) vì được thiết kế cho kháng chấn (robustness), nhưng chính sách năng lượng hạt nhân được tái cấu trúc hoàn toàn (reorganization).</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đầu tư vào cả ba chiều resilience: chịu đựng, phục hồi nhanh, và học hỏi từ sang chấn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat4" data-id="073">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #ea580c">
+    <div class="card-meta">
+      <span class="card-num">#073</span>
+      <span class="card-cat" style="background:#ea580c20; color:#ea580c">🔄 Động Lực & Phản Hồi</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Áp Lực Tối Ưu Hóa</h3>
+      <span class="card-en">(Optimization Pressure)</span>
+    </div>
+    <p class="card-summary">Khi hệ thống bị tối ưu hóa quá mức cho hiệu quả, nó mất khả năng phục hồi và thích nghi.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Áp lực tối ưu hóa (Optimization Pressure)</strong> tạo ra đánh đổi cơ bản: tối ưu hóa = loại bỏ 'lãng phí' = loại bỏ dư thừa và linh hoạt = mất resilience. Hệ thống được tối ưu hóa cho một điều kiện cụ thể sẽ dễ tổn thương trước bất kỳ điều kiện nào khác.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Chuỗi cung ứng just-in-time được tối ưu hóa hoàn hảo cho điều kiện bình thường. COVID-19 (điều kiện bất thường): không có hàng tồn kho dự phòng → thiếu khẩu trang, chip, thuốc. Hiệu quả cao = resilience thấp.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Duy trì 'lãng phí chiến lược' — dư thừa và linh hoạt là giá của khả năng phục hồi.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="074">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#074</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Trí Tuệ Đám Đông</h3>
+      <span class="card-en">(Collective Intelligence)</span>
+    </div>
+    <p class="card-summary">Nhóm người có thể đưa ra quyết định chính xác hơn cá nhân giỏi nhất trong nhiều trường hợp.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Trí tuệ đám đông (Collective Intelligence)</strong> của Surowiecki: nhóm đa dạng, độc lập, phân tán và có cơ chế tổng hợp ý kiến tốt sẽ vượt trội cá nhân chuyên gia. Điều kiện: đa dạng quan điểm, độc lập trong suy nghĩ, và cơ chế tổng hợp hiệu quả.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Cuộc thi 'Đoán số bò': hàng ngàn người đoán trọng lượng một con bò tại hội chợ. Trung bình cộng của tất cả: 1,197 lbs. Trọng lượng thực: 1,198 lbs. Không chuyên gia nào đến gần như vậy.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tổng hợp ý kiến đa dạng độc lập thường tốt hơn chuyên gia đơn lẻ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="075">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#075</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hành Vi Bầy Đàn</h3>
+      <span class="card-en">(Herding Behavior)</span>
+    </div>
+    <p class="card-summary">Xu hướng cá nhân làm theo đám đông thay vì phán đoán độc lập — tiêu diệt trí tuệ đám đông.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hành vi bầy đàn (Herding Behavior)</strong> là mặt tối của tập thể: khi cá nhân bỏ thông tin riêng để làm theo đám đông, thông tin bị mất và quyết định tập thể tệ đi. Nguyên nhân: áp lực xã hội, sợ sai một mình, thiếu thông tin riêng.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Bong bóng nhà đất 2008: mọi người mua nhà vì thấy người khác mua và giá tăng → không dùng phán đoán riêng về giá trị thực → khi bong bóng vỡ, tất cả cùng bán tháo.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Phát triển phán đoán độc lập — biết khi nào đám đông sai.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="076">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#076</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hiệu Ứng Khán Giả</h3>
+      <span class="card-en">(Bystander Effect)</span>
+    </div>
+    <p class="card-summary">Sự hiện diện của người khác làm giảm khả năng một cá nhân giúp đỡ trong tình huống khẩn cấp.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hiệu ứng khán giả (Bystander Effect)</strong> của Latané & Darley: càng nhiều người chứng kiến, xác suất mỗi người hành động càng thấp. Hai cơ chế: (1) phân tán trách nhiệm — 'ai đó sẽ giúp', (2) xác nhận xã hội — 'nếu không ai lo lắng thì không phải khẩn cấp'.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Vụ Kitty Genovese (1964): bị tấn công trong 35 phút, 38 người chứng kiến qua cửa sổ, không ai gọi cảnh sát. Không ai vô nhân tính — tất cả đều nghĩ người khác đã gọi.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong tình huống cần giúp đỡ, chỉ định người cụ thể: 'Anh áo đỏ, gọi cấp cứu!'</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="077">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#077</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Chuẩn Mực Xã Hội</h3>
+      <span class="card-en">(Social Norms)</span>
+    </div>
+    <p class="card-summary">Quy tắc không thành văn điều chỉnh hành vi trong nhóm — mạnh hơn luật pháp trong nhiều trường hợp.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Chuẩn mực xã hội (Social Norms)</strong> là phần mềm của xã hội — vô hình nhưng cực kỳ mạnh mẽ. Descriptive norms (mọi người thực sự làm gì) và injunctive norms (mọi người nên làm gì) đều ảnh hưởng hành vi, nhưng descriptive norms thường mạnh hơn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Thí nghiệm khách sạn tái sử dụng khăn: tin nhắn 'bảo vệ môi trường' → 35% tái sử dụng. Tin nhắn '75% khách trong phòng này tái sử dụng khăn' → 44% tái sử dụng. Chuẩn mực mô tả mạnh hơn lý lẽ đạo đức.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thay đổi chuẩn mực xã hội (đặc biệt descriptive norms) để thay đổi hành vi hàng loạt.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="078">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#078</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Phân Tầng Thông Tin</h3>
+      <span class="card-en">(Information Cascade)</span>
+    </div>
+    <p class="card-summary">Khi cá nhân bỏ qua thông tin riêng để làm theo hành động của người đi trước.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Phân tầng thông tin (Information Cascade)</strong>: nếu người 1 chọn A, người 2 thấy người 1 chọn A → thêm bằng chứng cho A. Người 3 thấy cả hai chọn A → bằng chứng áp đảo, bỏ qua tín hiệu riêng → chọn A. Cứ thế toàn hệ thống hội tụ về A dù A không tốt nhất.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Yelp review: nhà hàng đầu tiên nhận 5 sao → thu hút khách → nhiều review → được gợi ý nhiều hơn → càng đông khách. Nhà hàng tốt hơn khai trương sau bị bỏ lại. Cascade tiên phong vào trước.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong quyết định quan trọng, chủ động phân tích độc lập trước khi xem người khác làm gì.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="079">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#079</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Phân Công Lao Động</h3>
+      <span class="card-en">(Division of Labor)</span>
+    </div>
+    <p class="card-summary">Chuyên môn hóa và phối hợp cho phép nhóm thực hiện những gì cá nhân không thể.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Phân công lao động (Division of Labor)</strong> của Adam Smith là một trong những nguyên tắc mạnh mẽ nhất trong CAS nhân tạo: thay vì mỗi người làm tất cả, chuyên môn hóa sâu rồi phối hợp tạo ra năng suất vượt trội. Nguyên tắc này hoạt động từ cấp độ tế bào đến nền kinh tế toàn cầu.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nhà máy ghim Smith: 10 người làm tất cả → 200 ghim/ngày. 10 người chuyên môn hóa từng bước → 48,000 ghim/ngày. Tăng 240 lần chỉ bằng tổ chức lại — không cần công nghệ mới.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế phân công lao động và cơ chế phối hợp trước khi tuyển người.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="080">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#080</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hành Động Tập Thể</h3>
+      <span class="card-en">(Collective Action)</span>
+    </div>
+    <p class="card-summary">Vấn đề phối hợp khi lợi ích cá nhân xung đột với lợi ích tập thể.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hành động tập thể (Collective Action)</strong> của Olson: ngay cả khi mọi người đều được hưởng lợi từ hành động tập thể, cá nhân có khuyến khích 'ăn không' (free ride) — để người khác chịu chi phí trong khi mình hưởng lợi. Giải pháp: incentive chọn lọc, giám sát lẫn nhau, hoặc nhóm nhỏ.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Đóng thuế: nếu không có cưỡng chế, mọi người có khuyến khích không đóng (free ride trên dịch vụ công). Giải pháp: cưỡng chế pháp lý + chuẩn mực xã hội (người trốn thuế bị xã hội tẩy chay).</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế cơ chế ngăn free riding trong nhóm.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="081">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#081</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hiệu Ứng Ringelmann</h3>
+      <span class="card-en">(Ringelmann Effect)</span>
+    </div>
+    <p class="card-summary">Nỗ lực cá nhân giảm khi nhóm lớn hơn — hiệu ứng lười biếng xã hội.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hiệu ứng Ringelmann (Social Loafing)</strong>: trong nhóm, mỗi người đóng góp ít hơn khi nhóm lớn hơn — vì đóng góp cá nhân khó đo và trách nhiệm bị phân tán. Nghiên cứu kéo dây thừng: 1 người kéo 100%, 8 người chỉ kéo trung bình 49% sức mạnh.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Dự án nhóm ở trường: nhóm 2-3 người làm việc; nhóm 8-10 người → vài người làm phần lớn công việc. Không phải do lười biếng — là hiệu ứng hệ thống có thể thiết kế để tránh.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Làm cho đóng góp cá nhân có thể đo lường và nhận diện trong nhóm.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="082">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#082</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tư Duy Nhóm</h3>
+      <span class="card-en">(Groupthink)</span>
+    </div>
+    <p class="card-summary">Áp lực đồng nhất hóa trong nhóm gắn kết làm giảm chất lượng tư duy phê phán.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tư duy nhóm (Groupthink)</strong> của Janis: nhóm gắn kết, thân thiết, cô lập sẽ ưu tiên đồng thuận hơn đánh giá chính xác. Triệu chứng: ảo tưởng bất khả xâm phạm, hợp lý hóa tập thể, áp lực phù hợp, và kiểm duyệt tự nguyện.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Bay of Pigs (1961): đội ngũ cố vấn Kennedy — những trí tuệ hàng đầu — đồng thuận với kế hoạch thảm họa vì không ai muốn là người duy nhất nêu vấn đề trong không khí lạc quan hào hứng.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Chỉ định 'devil's advocate' chính thức trong các quyết định quan trọng.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="083">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#083</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hành Động Phối Hợp</h3>
+      <span class="card-en">(Coordinated Action)</span>
+    </div>
+    <p class="card-summary">Cách các tác nhân đạt được hành động phối hợp mà không có giao tiếp trực tiếp.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hành động phối hợp (Coordinated Action)</strong> của Schelling: trong nhiều tình huống, người không giao tiếp vẫn phối hợp được thông qua 'điểm tiêu cự' — giải pháp nổi bật về tính tự nhiên, đơn giản, hay tiền lệ. Bộ não người tìm kiếm giải pháp mà người khác cũng sẽ tìm.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>'Hãy gặp nhau ở New York vào ngày mai' — không nói giờ hay địa điểm. Hầu hết người Mỹ sẽ chọn Grand Central Station vào lúc 12 giờ trưa. Điểm tiêu cự làm cho phối hợp tự phát.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tạo ra điểm tiêu cự rõ ràng để phối hợp mà không cần giao tiếp tốn kém.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="084">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#084</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Động Lực Bên Trong</h3>
+      <span class="card-en">(Intrinsic Motivation)</span>
+    </div>
+    <p class="card-summary">Động lực xuất phát từ bên trong tác nhân bền vững và sáng tạo hơn động lực bên ngoài.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Động lực bên trong (Intrinsic Motivation)</strong> của Deci & Ryan: khi người làm vì yêu thích, tò mò, hay ý nghĩa — chất lượng và sáng tạo cao hơn. Khi làm vì tiền thưởng, kết quả cải thiện ngắn hạn nhưng thường giảm dài hạn và giết chết động lực nội tại (crowding out effect).</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Trẻ vẽ vì thích → hào hứng. Bắt đầu thưởng tiền khi vẽ → vẽ nhiều hơn. Ngừng thưởng → vẽ ít hơn cả lúc đầu. Phần thưởng bên ngoài đã 'thay thế' động lực bên trong.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế công việc có ý nghĩa và tự chủ — không chỉ tối ưu hóa incentive tài chính.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="085">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#085</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hiệu Ứng Pygmalion</h3>
+      <span class="card-en">(Pygmalion Effect)</span>
+    </div>
+    <p class="card-summary">Kỳ vọng cao của người có ảnh hưởng tạo ra hiệu suất cao hơn thực sự.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hiệu ứng Pygmalion (Pygmalion Effect)</strong> của Rosenthal & Jacobson: kỳ vọng của người có quyền lực (giáo viên, quản lý) ảnh hưởng thực sự đến hiệu suất của người được kỳ vọng — thông qua hành vi vi tế: nhiều phản hồi hơn, nhiều cơ hội hơn, nhiều khuyến khích hơn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Thí nghiệm trường học: nói với giáo viên ngẫu nhiên rằng một số học sinh 'có tiềm năng đặc biệt' (thực ra chọn ngẫu nhiên). Cuối năm, những học sinh này cải thiện IQ và điểm số đáng kể hơn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Kỳ vọng cao có căn cứ là đầu tư vào người — nó tự thực hiện.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="086">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#086</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Lý Thuyết Điểm Tới Hạn Xã Hội</h3>
+      <span class="card-en">(Social Tipping Point)</span>
+    </div>
+    <p class="card-summary">Hành vi xã hội có ngưỡng: khi đủ số người thay đổi, phần còn lại theo nhanh chóng.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Điểm tới hạn xã hội (Social Tipping Point)</strong>: nhiều hành vi xã hội có cấu trúc ngưỡng — cá nhân sẽ thay đổi hành vi khi đủ số người xung quanh đã thay đổi. Khi đủ người vượt ngưỡng, thay đổi lan nhanh theo cấp số nhân.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nghiên cứu Centola: thay đổi chuẩn mực xã hội nhóm (~25% cam kết là ngưỡng) sau đó cả nhóm chuyển sang chuẩn mực mới. Phong trào #MeToo: khi đủ người lên tiếng, chuẩn mực im lặng sụp đổ trong vài tuần.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tập trung đạt ngưỡng 25% trong nhóm ảnh hưởng — sau đó momentum tự vận hành.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="087">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#087</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Quản Trị Công Địa</h3>
+      <span class="card-en">(Commons Governance)</span>
+    </div>
+    <p class="card-summary">Cộng đồng có thể quản lý tài nguyên chung hiệu quả mà không cần tư nhân hóa hay nhà nước.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Quản trị công địa (Commons Governance)</strong> của Ostrom (Nobel kinh tế 2009): phản bác lý thuyết 'bi kịch công địa' bằng bằng chứng thực tế. Cộng đồng ngư dân, nông dân, lâm nghiệp trên khắp thế giới quản lý tài nguyên chung bền vững hàng trăm năm qua thiết kế thể chế địa phương.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Làng đánh cá Maine: ngư dân tự tổ chức quản lý số lượng tôm hùm được đánh bắt, bảo vệ con non, và thực thi quy tắc — không cần chính phủ. Bền vững hơn 150 năm.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tin vào khả năng tự quản lý của cộng đồng — cung cấp điều kiện, không phải kiểm soát.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat5" data-id="088">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #0891b2">
+    <div class="card-meta">
+      <span class="card-num">#088</span>
+      <span class="card-cat" style="background:#0891b220; color:#0891b2">👥 Hành Vi Tập Thể</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Đổi Mới Mở</h3>
+      <span class="card-en">(Open Innovation)</span>
+    </div>
+    <p class="card-summary">Khai thác trí tuệ tập thể bên ngoài tổ chức để đổi mới nhanh hơn và rộng hơn.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Đổi mới mở (Open Innovation)</strong> của Chesbrough: trong thế giới kiến thức phân tán, không tổ chức nào có đủ chuyên môn bên trong. Chia sẻ vấn đề, hợp tác với người ngoài, và 'invent elsewhere' tốt hơn độc quyền R&D.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>NASA Tournament Lab: thay vì chỉ dùng kỹ sư NASA, đưa vấn đề lên nền tảng đám đông. Giải pháp từ người ngoài NASA thường tốt hơn và rẻ hơn nhiều. Bài toán dự đoán bão mặt trời được giải bởi một kỹ sư về hưu người Anh.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Mở bài toán ra ngoài — đa dạng quan điểm tạo ra giải pháp mà chuyên gia nội bộ không thấy.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="089">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#089</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tổ Chức Như CAS</h3>
+      <span class="card-en">(Organization as CAS)</span>
+    </div>
+    <p class="card-summary">Doanh nghiệp và tổ chức là hệ thống thích nghi phức tạp — không thể quản lý như cỗ máy.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p>Nhìn <strong>tổ chức như CAS</strong> thay đổi hoàn toàn cách lãnh đạo: không phải ra lệnh và kiểm soát, mà thiết kế điều kiện cho tự tổ chức. Không phải tối ưu hóa từng bộ phận, mà tối ưu hóa tương tác. Không phải dự đoán và kế hoạch chi tiết, mà thích nghi và học hỏi.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>W.L. Gore & Associates (hãng Gore-Tex): không có chức danh, không có sếp chính thức, không có mô tả công việc cứng. Mọi người tự tổ chức quanh dự án. Kết quả: liên tục được xếp hạng là nơi làm việc tốt nhất và đổi mới sáng tạo nhất.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế điều kiện cho tự tổ chức thay vì tối ưu hóa cấu trúc cứng.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="090">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#090</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Lãnh Đạo Phức Tạp</h3>
+      <span class="card-en">(Complexity Leadership)</span>
+    </div>
+    <p class="card-summary">Lãnh đạo trong CAS là tạo điều kiện cho nổi sinh, không phải kiểm soát kết quả.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Lãnh đạo phức tạp (Complexity Leadership)</strong> của Uhl-Bien: ba chức năng lãnh đạo trong CAS: (1) Administrative leadership — quản lý hiệu quả hiện tại. (2) Adaptive leadership — thích nghi với thách thức mới. (3) Enabling leadership — tạo điều kiện cho nổi sinh và học hỏi.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Jeff Bezos tại Amazon: không quản lý vi mô sản phẩm cụ thể mà thiết kế nguyên tắc (leadership principles), cơ chế (two-pizza teams, working backwards), và văn hóa (customer obsession) — tạo điều kiện cho hàng nghìn đội tự tổ chức đổi mới.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đầu tư vào thiết kế môi trường và điều kiện hơn là kiểm soát kết quả.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="091">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#091</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Mô Hình Học Tập Tổ Chức</h3>
+      <span class="card-en">(Organizational Learning)</span>
+    </div>
+    <p class="card-summary">Tổ chức học hỏi và thích nghi như một hệ thống, không chỉ qua cá nhân.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Học tập tổ chức (Organizational Learning)</strong> của Argyris & Schön: tổ chức học ở hai cấp: <em>Single-loop learning</em> — sửa lỗi trong khuôn khổ hiện tại. <em>Double-loop learning</em> — đặt câu hỏi về khuôn khổ và giá trị nền tảng. Chỉ double-loop learning tạo ra thích nghi thực sự.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Toyota Production System: mọi nhân viên có quyền 'kéo dây' dừng dây chuyền khi phát hiện vấn đề (andon cord). Mỗi dừng là cơ hội học tập hệ thống. Hàng nghìn lần học mỗi ngày → cải tiến liên tục.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tạo cơ chế cho double-loop learning: khuyến khích đặt câu hỏi về khuôn khổ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="092">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#092</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Thiết Kế Tổ Chức Thích Nghi</h3>
+      <span class="card-en">(Adaptive Organization Design)</span>
+    </div>
+    <p class="card-summary">Cấu trúc tổ chức không phải cố định — nên thiết kế để thay đổi theo môi trường.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Thiết kế tổ chức thích nghi (Adaptive Organization Design)</strong>: thay vì thiết kế cấu trúc tối ưu một lần, thiết kế khả năng tổ chức lại nhanh chóng. Holacracy, agile teams, project-based structure — tất cả là nỗ lực tạo ra tổ chức CAS thực sự.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Spotify Model: squad (nhóm nhỏ tự chủ), tribe (nhóm squad liên quan), chapter (chuyên môn), guild (cộng đồng thực hành). Cấu trúc ma trận linh hoạt cho phép thích nghi mà không mất chuyên môn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế tổ chức để tái cấu hình nhanh, không phải để vận hành ổn định.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="093">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#093</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Quản Lý Chiến Lược CAS</h3>
+      <span class="card-en">(CAS Strategy Management)</span>
+    </div>
+    <p class="card-summary">Chiến lược trong môi trường CAS không phải kế hoạch chi tiết mà là định hướng và thích nghi.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Chiến lược CAS</strong>: trong môi trường phức tạp, kế hoạch chi tiết dài hạn là ảo tưởng. Thay vào đó: định hướng rõ (vision + values), thử nghiệm nhiều (portfolio of bets), học nhanh (rapid feedback), và điều chỉnh liên tục (pivot).</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Amazon Web Services: không có trong kế hoạch 5 năm của Amazon. Xuất hiện từ nhu cầu nội bộ → nhận thấy tiềm năng → thử nghiệm → điều chỉnh → trở thành $85 tỷ business. Chiến lược xuất hiện, không được lên kế hoạch.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đặt ra hướng đi rõ ràng, nhưng giữ chiến lược linh hoạt — học từ thực tế.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="094">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#094</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Văn Hóa Như CAS</h3>
+      <span class="card-en">(Culture as CAS)</span>
+    </div>
+    <p class="card-summary">Văn hóa tổ chức nổi sinh từ vô số tương tác hàng ngày — không thể 'lập trình' từ trên xuống.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Văn hóa như CAS</strong>: văn hóa không phải thứ có thể thiết kế và áp đặt — nó nổi sinh từ hàng triệu tương tác hàng ngày. Lãnh đạo định hình văn hóa thông qua: hành vi mẫu (modeling), hệ thống khen thưởng (reinforcement), và câu chuyện được kể (narrative).</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Netflix Culture Deck: thay vì quy tắc chi tiết, định nghĩa giá trị và hành vi cốt lõi, rồi cho tự do lớn trong hành động. 'Sử dụng phán đoán tốt' thay vì 100 trang quy định. Văn hóa nổi sinh từ những người chia sẻ giá trị, không phải từ quy tắc.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Định hình văn hóa qua giá trị, hành vi mẫu và câu chuyện — không phải quy tắc.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="095">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#095</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Quản Lý Sự Đa Dạng</h3>
+      <span class="card-en">(Diversity Management)</span>
+    </div>
+    <p class="card-summary">Đa dạng nhận thức trong nhóm cải thiện giải quyết vấn đề phức tạp.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Quản lý đa dạng (Diversity Management)</strong> từ góc nhìn CAS: Page (2007) chứng minh toán học rằng nhóm đa dạng về mô hình tư duy (cognitive diversity) thường vượt trội nhóm chuyên gia đồng nhất trong bài toán phức tạp — vì khám phá không gian giải pháp rộng hơn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nghiên cứu McKinsey: công ty trong top 25% về đa dạng giới tính có xác suất hiệu suất tài chính trên trung bình cao hơn 21%. Đa dạng dân tộc/văn hóa: 35% cao hơn. Đa dạng không chỉ là đạo đức — là lợi thế cạnh tranh.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đầu tư vào cognitive diversity — quan điểm khác nhau là tài sản cho bài toán phức tạp.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="096">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#096</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Khung Cynefin</h3>
+      <span class="card-en">(Cynefin Framework)</span>
+    </div>
+    <p class="card-summary">Mô hình phân loại bài toán theo độ phức tạp để chọn phương pháp quản lý phù hợp.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Khung Cynefin (Cynefin Framework)</strong> của Snowden: bốn lĩnh vực: (1) Simple — quan hệ nhân quả rõ ràng → áp dụng quy trình tốt nhất. (2) Complicated — nhân quả có thể phân tích → chuyên gia và phân tích. (3) Complex (CAS) — nhân quả chỉ rõ sau → thử nghiệm và học. (4) Chaotic — không có nhân quả → hành động để ổn định.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>COVID-19: ban đầu Chaotic (hành động ngay). Sau đó Complex (thử nghiệm nhiều cách, học từ các nước). Không thể áp dụng Simple/Complicated solutions cho vấn đề Complex — đó là lý do nhiều chính phủ sai.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Chẩn đoán đúng loại bài toán trước khi chọn công cụ giải quyết.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="097">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#097</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Thiết Kế Tư Duy</h3>
+      <span class="card-en">(Design Thinking)</span>
+    </div>
+    <p class="card-summary">Phương pháp giải quyết vấn đề lấy con người làm trung tâm, ôm ấp sự không chắc chắn.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Thiết kế tư duy (Design Thinking)</strong> là phương pháp phù hợp với CAS: thay vì phân tích rồi giải, nó empathize (đồng cảm) → define (định nghĩa) → ideate (tạo ý tưởng) → prototype (tạo mẫu) → test (kiểm tra). Vòng lặp ngắn, học nhanh.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>IDEO thiết kế xe đẩy mua sắm: quan sát thực tế (không hỏi, xem hành vi) → phát hiện insight bất ngờ → tạo nhiều prototype → test với người thật → iterate. Toàn bộ trong 5 ngày.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Prototype và test nhanh tốt hơn phân tích dài — trong môi trường phức tạp, thực tế là giáo viên tốt nhất.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="098">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#098</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Phương Pháp Agile</h3>
+      <span class="card-en">(Agile Methodology)</span>
+    </div>
+    <p class="card-summary">Phát triển phần mềm theo sprint ngắn, phản hồi liên tục — áp dụng nguyên lý CAS vào dự án.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Phương pháp Agile</strong> là CAS trong thực hành: thay vì kế hoạch chi tiết dài hạn (waterfall), làm việc trong sprint 2 tuần, demo và nhận phản hồi, điều chỉnh backlog, lặp lại. Tốc độ thích nghi là ưu tiên hơn tuân thủ kế hoạch.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Spotify, Airbnb, và hàng nghìn công ty công nghệ: deploy code hàng chục lần mỗi ngày, đo kết quả thực, điều chỉnh theo dữ liệu. Học từ thực tế liên tục thay vì đặt cược lớn vào kế hoạch dài hạn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Rút ngắn vòng phản hồi trong mọi dự án — học nhanh hơn lập kế hoạch.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="099">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#099</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Cải Tiến Liên Tục</h3>
+      <span class="card-en">(Kaizen)</span>
+    </div>
+    <p class="card-summary">Triết lý cải tiến liên tục thông qua hàng nghìn thay đổi nhỏ tích lũy theo thời gian.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Kaizen (改善)</strong> của Imai: thay vì đổi mới đột phá (innovation), tập trung vào cải tiến nhỏ liên tục mỗi ngày từ mọi cấp độ. Tổng hợp của hàng nghìn cải tiến nhỏ cuối cùng vượt trội một vài cải tiến lớn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Toyota: mỗi nhân viên đề xuất trung bình 10 cải tiến mỗi năm. Hơn 90% được thực hiện. Qua 30 năm, tích lũy của hàng triệu cải tiến nhỏ tạo ra system sản xuất không ai bắt kịp — không phải từ đột phá công nghệ.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>1% cải tiến mỗi ngày = 37 lần tốt hơn sau 1 năm. Nhỏ và liên tục thắng lớn và gián đoạn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="100">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#100</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Quản Lý Rủi Ro Hệ Thống</h3>
+      <span class="card-en">(Systemic Risk Management)</span>
+    </div>
+    <p class="card-summary">Nhận diện và quản lý rủi ro xuất phát từ sự kết nối và tương tác của hệ thống.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Quản lý rủi ro hệ thống (Systemic Risk)</strong>: rủi ro trong CAS không chỉ là tổng rủi ro các thành phần — mà là rủi ro nổi sinh từ tương tác. Rủi ro hệ thống thường bị đánh giá thấp vì quản lý rủi ro truyền thống chỉ nhìn từng thành phần riêng lẻ.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Khủng hoảng 2008: mỗi ngân hàng quản lý rủi ro cẩn thận theo tiêu chuẩn riêng. Nhưng toàn hệ thống ngân hàng liên kết chặt qua các sản phẩm phái sinh phức tạp → khi một phần sụp đổ, toàn hệ thống cascade.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Phân tích rủi ro ở cấp hệ thống, không chỉ cấp thành phần.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="101">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#101</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Nền Tảng và Hệ Sinh Thái</h3>
+      <span class="card-en">(Platform & Ecosystem)</span>
+    </div>
+    <p class="card-summary">Mô hình kinh doanh tạo ra nền tảng cho hệ sinh thái tác nhân tự tổ chức và tạo giá trị.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Nền tảng và hệ sinh thái (Platform & Ecosystem)</strong>: thay vì tự tạo ra giá trị, platform tạo ra môi trường cho người dùng và nhà cung cấp tạo giá trị với nhau. CAS được thiết kế có chủ ý: quy tắc tương tác, cơ chế tin tưởng, và hiệu ứng mạng.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Apple App Store: Apple không tạo ra ứng dụng — tạo nền tảng với quy tắc (privacy, security), công cụ (Xcode, APIs), và thị trường (30% hoa hồng). 2 triệu lập trình viên tự tổ chức tạo ra 2 triệu ứng dụng — không Apple nào có thể làm một mình.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế platform với quy tắc đúng, rồi để hệ sinh thái tự phát triển.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat6" data-id="102">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #be185d">
+    <div class="card-meta">
+      <span class="card-num">#102</span>
+      <span class="card-cat" style="background:#be185d20; color:#be185d">🏢 Ứng Dụng Tổ Chức</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Chuyển Đổi Kỹ Thuật Số</h3>
+      <span class="card-en">(Digital Transformation)</span>
+    </div>
+    <p class="card-summary">Chuyển đổi kỹ thuật số là thay đổi hệ thống CAS, không chỉ áp dụng công nghệ mới.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Chuyển đổi kỹ thuật số (Digital Transformation)</strong> từ góc nhìn CAS: thất bại phổ biến vì doanh nghiệp cố 'số hóa' quy trình cũ thay vì tái thiết kế mô hình tương tác. Thành công đòi hỏi thay đổi cả công nghệ, văn hóa, quy trình và mô hình kinh doanh cùng lúc.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Kodak vs Fujifilm: cùng đối mặt với digital photography. Kodak số hóa film business (digitize old CAS) → phá sản 2012. Fujifilm tái thiết kế thành công ty đa dạng hóa vào mỹ phẩm, dược phẩm, màn hình LCD (new CAS) → vẫn phát triển.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Chuyển đổi kỹ thuật số = thiết kế lại CAS, không phải thêm công nghệ vào CAS cũ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="103">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#103</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hệ Sinh Thái Sinh Học</h3>
+      <span class="card-en">(Biological Ecosystem)</span>
+    </div>
+    <p class="card-summary">Hệ sinh thái tự nhiên là mô hình CAS hoàn hảo — bền vững qua hàng triệu năm tiến hóa.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hệ sinh thái sinh học (Biological Ecosystem)</strong> là CAS tự nhiên phức tạp nhất: hàng triệu loài tương tác qua chuỗi thức ăn, ký sinh, cộng sinh, và cạnh tranh. Tính bền vững đến từ đa dạng, dư thừa, vòng phản hồi, và khả năng thích nghi.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Rừng Amazon: 390 tỷ cây, 16,000 loài, vô số tương tác ẩn. Bỏ đi chỉ một loài có thể tạo ra cascade không lường trước. Sói vàng được tái nhập Yellowstone → kiểm soát hươu → cỏ phục hồi → bờ sông ổn định → cá hồi trở lại. Trophic cascade.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Học từ hệ sinh thái: đa dạng, dư thừa và vòng phản hồi là chìa khóa bền vững.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="104">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#104</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Dịch Vụ Hệ Sinh Thái</h3>
+      <span class="card-en">(Ecosystem Services)</span>
+    </div>
+    <p class="card-summary">Các lợi ích kinh tế và xã hội mà hệ sinh thái tự nhiên cung cấp miễn phí cho con người.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Dịch vụ hệ sinh thái (Ecosystem Services)</strong> của Costanza: rừng làm sạch không khí, đất ngập nước lọc nước, ong thụ phấn mùa màng, rạn san hô bảo vệ bờ biển — tất cả là dịch vụ có giá trị kinh tế thực nhưng không được tính trong GDP. Ước tính tổng giá trị: $125-$145 nghìn tỷ USD/năm — gấp đôi GDP toàn cầu.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Thụ phấn của ong: giá trị ước tính $577 tỷ USD/năm với nông nghiệp toàn cầu. Colony collapse disorder (sụp đổ tổ ong) không phải 'vấn đề môi trường' — là khủng hoảng kinh tế tiềm ẩn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Định giá và bảo vệ dịch vụ hệ sinh thái — chúng là cơ sở hạ tầng vô hình của kinh tế.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="105">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#105</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Giả Thuyết Gaia</h3>
+      <span class="card-en">(Gaia Hypothesis)</span>
+    </div>
+    <p class="card-summary">Trái Đất như một siêu sinh vật tự điều chỉnh — hệ thống sự sống duy trì điều kiện cho sự sống.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Giả thuyết Gaia (Gaia Hypothesis)</strong> của Lovelock & Margulis: tổng hợp sự sống trên Trái Đất hành xử như một CAS siêu lớn, tự điều chỉnh nhiệt độ, thành phần khí quyển, và hóa học đại dương ở mức phù hợp cho sự sống — dù mặt trời đã tăng độ sáng 30% từ khi sự sống xuất hiện.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nhiệt độ Trái Đất đã ổn định trong khoảng hẹp thuận lợi cho sự sống trong 3.5 tỷ năm — dù mặt trời sáng hơn, lục địa di chuyển, thiên thạch va chạm. Cơ chế phản hồi sinh địa hóa học giữ ổn định.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tôn trọng các cơ chế tự điều chỉnh của hệ thống sự sống — phá vỡ chúng có hậu quả khôn lường.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="106">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#106</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Biến Đổi Khí Hậu Như CAS</h3>
+      <span class="card-en">(Climate as CAS)</span>
+    </div>
+    <p class="card-summary">Hệ thống khí hậu là CAS với các điểm giới hạn nguy hiểm và vòng phản hồi khuếch đại.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Biến đổi khí hậu như CAS</strong>: khí hậu không thay đổi tuyến tính — nó có các điểm giới hạn (tipping points) mà qua đó vòng phản hồi tự khuếch đại không thể kiểm soát. Băng tan → phản chiếu ánh sáng giảm → hấp thụ nhiệt tăng → băng tan nhanh hơn. Permafrost tan → methane giải phóng → nhiệt độ tăng → tan nhanh hơn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>IPCC cảnh báo 9 tipping points khí hậu có thể kích hoạt lẫn nhau: ice sheet Greenland, rừng Amazon, permafrost Siberia... Vượt một điểm có thể kéo theo các điểm khác như domino.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Hành động trước tipping point — sau khi vượt qua, phản hồi tự khuếch đại không thể đảo ngược.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="107">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#107</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Kinh Tế Tuần Hoàn</h3>
+      <span class="card-en">(Circular Economy)</span>
+    </div>
+    <p class="card-summary">Mô hình kinh tế mô phỏng hệ sinh thái: không có 'chất thải', mọi đầu ra là đầu vào của vòng khác.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Kinh tế tuần hoàn (Circular Economy)</strong> của McDonough & Braungart (Cradle to Cradle): thay vì take-make-dispose, thiết kế hệ thống mà vật liệu và năng lượng tuần hoàn liên tục. Mô phỏng hệ sinh thái — không có 'chất thải', chỉ có 'chất dinh dưỡng' cho chu trình tiếp theo.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Thành phố Kalundborg (Đan Mạch): nhà máy điện, nhà máy lọc dầu, nhà máy dược phẩm, và trang trại kết nối chất thải của nhau. Khí thải của một bên là nguyên liệu của bên khác. Hệ sinh thái công nghiệp hoàn chỉnh.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế hệ thống sản xuất mô phỏng hệ sinh thái — đầu ra của một người là đầu vào của người khác.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="108">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#108</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Hệ Thống Thành Phố</h3>
+      <span class="card-en">(Urban Systems)</span>
+    </div>
+    <p class="card-summary">Thành phố là CAS với tính quy mô phi tuyến: mỗi lần tăng gấp đôi dân số, nhiều thứ tăng 15%.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hệ thống thành phố (Urban Systems)</strong> của Geoffrey West: thành phố tuân theo quy luật mũ kỳ diệu — mỗi lần dân số tăng gấp đôi, thu nhập bình quân tăng 15%, bằng sáng chế tăng 15%, nhưng cơ sở hạ tầng (đường, điện) chỉ tăng 85%. Quy mô thành phố tạo ra 'siêu tuyến tính' về sáng tạo.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Một người ở thành phố 1 triệu dân sáng tạo hơn 5 lần người ở thành phố 100,000 người — không phải vì thông minh hơn mà vì mật độ tương tác cao hơn. CAS với nhiều tác nhân tạo ra nhiều kết hợp ý tưởng hơn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tăng mật độ tương tác — giữa người, ý tưởng và lĩnh vực — để khai thác hiệu ứng thành phố.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="109">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#109</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Công Nghệ Như CAS</h3>
+      <span class="card-en">(Technology as CAS)</span>
+    </div>
+    <p class="card-summary">Hệ sinh thái công nghệ tiến hóa theo nguyên lý CAS: kết hợp, biến đổi, chọn lọc.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Công nghệ như CAS</strong> của Brian Arthur: công nghệ không được phát minh từ không — nó được 'tiến hóa' từ việc kết hợp công nghệ hiện có theo cách mới. Mỗi công nghệ mới mở ra 'hốc sinh thái' mới cho các công nghệ khác.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Smartphone = máy tính + điện thoại + máy ảnh + GPS + internet + touchscreen. Mỗi thành phần là công nghệ hiện có — kết hợp tạo ra hốc sinh thái mới cho hàng triệu ứng dụng, dịch vụ, và công nghệ tiếp theo.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đổi mới thường đến từ kết hợp sáng tạo hơn là phát minh hoàn toàn mới.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="110">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#110</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Trí Tuệ Nhân Tạo Như CAS</h3>
+      <span class="card-en">(AI as CAS)</span>
+    </div>
+    <p class="card-summary">Hệ thống AI học sâu nổi sinh hành vi không được lập trình trực tiếp — giống CAS.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>AI như CAS</strong>: mạng neural sâu không được lập trình từng hành vi — các quy tắc đơn giản (gradient descent trên hàng tỷ tham số) tương tác để nổi sinh khả năng phức tạp. Large Language Models (LLMs) 'nổi sinh' khả năng lý luận, dịch ngôn ngữ, và giải toán — không ai lập trình cụ thể những điều này.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>GPT-4 được huấn luyện dự đoán token tiếp theo — quy tắc cực kỳ đơn giản. Kết quả nổi sinh: hiểu ngữ cảnh, giải thích triết học, viết code, và hỗ trợ nghiên cứu y khoa. Emergence từ quy tắc đơn giản ở quy mô lớn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>AI mạnh không đến từ lập trình phức tạp — đến từ quy tắc đơn giản + dữ liệu lớn + quy mô.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="111">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#111</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tương Lai Không Thể Dự Đoán</h3>
+      <span class="card-en">(Radical Uncertainty)</span>
+    </div>
+    <p class="card-summary">Trong thế giới CAS, nhiều sự kiện quan trọng nhất là hoàn toàn không thể dự đoán.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Bất định triệt để (Radical Uncertainty)</strong> của Kay & King: phân biệt rủi ro (có thể tính xác suất) và bất định (không thể biết phân phối xác suất). Trong CAS, nhiều sự kiện quan trọng nhất là bất định — không phải rủi ro. Phản ứng tối ưu không phải dự đoán tốt hơn mà xây dựng khả năng thích nghi tốt hơn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Không ai dự đoán được: COVID-19, internet, smartphone, 9/11, sụp đổ Liên Xô. Tất cả thay đổi thế giới sâu sắc. Kế hoạch 10 năm chi tiết có giá trị rất thấp — năng lực thích nghi nhanh có giá trị rất cao.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thay vì dự đoán tốt hơn, đầu tư vào năng lực thích nghi tốt hơn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="112">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#112</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Thiên Nga Đen</h3>
+      <span class="card-en">(Black Swan)</span>
+    </div>
+    <p class="card-summary">Sự kiện hiếm, không thể dự đoán, có tác động cực lớn và thường được hợp lý hóa sau thực tế.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Thiên nga đen (Black Swan)</strong> của Taleb: trong CAS với phân phối lũy thừa, 'đuôi phân phối' chứa những sự kiện hiếm nhưng định hình lịch sử. Những sự kiện này: (1) ngoài kỳ vọng thông thường, (2) tác động cực lớn, (3) được giải thích hợp lý SAU KHI xảy ra. Đây là đặc điểm của thế giới 'Extremistan'.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>WWI bùng nổ từ vụ ám sát Franz Ferdinand. Thế giới internet từ phòng thí nghiệm Tim Berners-Lee. COVID-19 từ chợ Vũ Hán. Tất cả không thể dự đoán trước, đều định hình thế giới. Thế giới được định hình bởi outliers, không phải trung bình.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Xây dựng 'barbell strategy': cực kỳ an toàn + cực kỳ linh hoạt — tránh khu vực trung bình dễ bị thiên nga đen xóa sổ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="113">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#113</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Chủ Nghĩa Kháng Mong Manh</h3>
+      <span class="card-en">(Antifragility)</span>
+    </div>
+    <p class="card-summary">Trái ngược với dễ vỡ: hệ thống trở nên mạnh hơn từ stress, hỗn loạn và bất định.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Kháng mong manh (Antifragility)</strong> của Taleb: ba loại hệ thống: (1) Mong manh — stress làm yếu. (2) Bền vững — stress không ảnh hưởng. (3) Kháng mong manh — stress làm mạnh hơn. Cơ thể người là antifragile: xương chịu lực sẽ dày hơn; cơ bắp được tập luyện sẽ mạnh hơn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Hệ miễn dịch: tiếp xúc với vi khuẩn và virus nhỏ → học nhận diện và phản ứng → mạnh hơn. Trẻ em lớn lên quá sạch sẽ (không tiếp xúc vi khuẩn) → hệ miễn dịch kém → dễ bị dị ứng và tự miễn.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế hệ thống để học và mạnh lên từ stress nhỏ, không tránh né mọi stress.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="114">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#114</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Tiến Hóa Của Hợp Tác</h3>
+      <span class="card-en">(Evolution of Cooperation)</span>
+    </div>
+    <p class="card-summary">Hợp tác tiến hóa và ổn định trong quần thể ngay cả khi từng cá nhân có khuyến khích phản bội.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Tiến hóa của hợp tác (Evolution of Cooperation)</strong> của Axelrod: trong tournament prisoner's dilemma lặp lại, chiến lược 'Tit-for-Tat' (hợp tác trước, sau đó làm theo đối thủ) thắng mọi chiến lược phức tạp hơn. Hợp tác tiến hóa khi: gặp lại đủ thường xuyên, hành vi có thể quan sát, và tương lai đủ quan trọng.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Chiến hào WWI: quân đội đối lập tự phát triển 'hệ thống live and let live' — bắn sai để không giết nhau, chia sẻ thông tin ngầm về lịch trình pháo kích. Hợp tác xuất hiện tự phát dù không có lệnh từ trên.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Thiết kế hệ thống để tương tác lặp lại, hành vi quan sát được — hợp tác tự nổi sinh.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="115">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#115</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Giới Hạn Hành Tinh</h3>
+      <span class="card-en">(Planetary Boundaries)</span>
+    </div>
+    <p class="card-summary">Chín ranh giới an toàn của hệ thống Trái Đất — vượt qua chúng đe dọa điều kiện sống của nhân loại.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Giới hạn hành tinh (Planetary Boundaries)</strong> của Rockström (2009): xác định 9 hệ thống của Trái Đất với ngưỡng an toàn: biến đổi khí hậu, đa dạng sinh học, chu trình nitơ/photpho, sử dụng đất, nước ngọt, axit hóa đại dương, ozon tầng bình lưu, aerosol, và ô nhiễm hóa học. Đã vượt 6/9 ranh giới.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Chu trình nitơ: phân bón hóa học cần thiết cho nông nghiệp nuôi 8 tỷ người — nhưng cũng phá vỡ chu trình nitơ toàn cầu, tạo ra 'dead zones' đại dương và biến đổi hệ sinh thái sâu sắc.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Tôn trọng giới hạn hành tinh như là ranh giới hoạt động của nền kinh tế.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="116">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#116</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Phức Tạp Xã Hội</h3>
+      <span class="card-en">(Social Complexity)</span>
+    </div>
+    <p class="card-summary">Xã hội loài người là CAS cực kỳ phức tạp với nhiều tầng ý nghĩa, ngôn ngữ và biểu tượng.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Phức tạp xã hội (Social Complexity)</strong>: xã hội không chỉ là mạng lưới tương tác vật lý — còn là mạng lưới ý nghĩa, biểu tượng, và chuẩn mực. Con người không chỉ phản ứng với thực tế — họ phản ứng với 'thực tế được xây dựng xã hội'. Điều này làm cho hệ thống xã hội phức tạp hơn bất kỳ CAS vật lý nào.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Tiền tệ: một tờ giấy không có giá trị nội tại. Giá trị của nó hoàn toàn là 'thực tế được xây dựng xã hội' — tồn tại vì mọi người tin nó tồn tại. Mất niềm tin → siêu lạm phát → tiền trở về giá trị giấy.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Trong hệ thống xã hội, ý nghĩa và niềm tin là yếu tố thực, không kém vật chất.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="117">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#117</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Quản Trị Toàn Cầu</h3>
+      <span class="card-en">(Global Governance)</span>
+    </div>
+    <p class="card-summary">Thách thức điều phối CAS toàn cầu mà không có chính phủ thế giới.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Quản trị toàn cầu (Global Governance)</strong>: biến đổi khí hậu, đại dịch, AI, vũ khí hạt nhân — những thách thức của CAS toàn cầu cần phối hợp toàn cầu nhưng không có cơ chế quyền lực toàn cầu. Vấn đề hành động tập thể ở quy mô chưa từng có.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Nghị định thư Montreal (1987): phối hợp toàn cầu thành công đầu tiên — 197 quốc gia đồng thuận loại bỏ CFC để bảo vệ tầng ozone. Lỗ hổng ozone đang phục hồi. Mô hình cho thấy quản trị toàn cầu là có thể.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Quản trị toàn cầu có thể, nhưng đòi hỏi thiết kế cơ chế khuyến khích và giám sát lẫn nhau phù hợp.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="118">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#118</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Sự Tăng Tốc Thay Đổi</h3>
+      <span class="card-en">(Accelerating Change)</span>
+    </div>
+    <p class="card-summary">Tốc độ thay đổi công nghệ và xã hội đang tăng nhanh — rút ngắn thời gian thích nghi.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Sự tăng tốc thay đổi (Accelerating Change)</strong> của Kurzweil & Moore: tốc độ đổi mới công nghệ tăng theo hàm mũ vì mỗi công nghệ mới mở ra công cụ cho công nghệ tiếp theo. Hệ quả: thời gian để thích nghi với thay đổi ngày càng rút ngắn.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Điện thoại cố định mất 50 năm để đạt 50 triệu người dùng. Radio: 38 năm. TV: 13 năm. Internet: 4 năm. iPhone: 2 năm. TikTok: 9 tháng. ChatGPT: 5 ngày đạt 1 triệu người dùng.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đầu tư vào năng lực học nhanh — đó là lợi thế cạnh tranh quan trọng nhất trong thời đại tăng tốc.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="119">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#119</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Sức Mạnh Của Mục Đích</h3>
+      <span class="card-en">(Purpose-Driven Systems)</span>
+    </div>
+    <p class="card-summary">Hệ thống có mục đích rõ ràng và chia sẻ thích nghi và tự tổ chức hiệu quả hơn.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Hệ thống định hướng mục đích (Purpose-Driven Systems)</strong>: trong CAS nhân tạo, mục đích chung và giá trị chia sẻ là cơ chế tự tổ chức mạnh mẽ nhất. Không cần kiểm soát chi tiết khi tác nhân hiểu sâu 'tại sao' — họ tự điều phối hướng đến mục tiêu chung.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>SpaceX: mục đích 'làm cho nhân loại trở thành loài đa hành tinh' là nguyên tắc tổ chức cho hàng chục nghìn kỹ sư. Khi đối mặt với quyết định khó, mọi người tự hỏi 'điều gì phục vụ mục đích đó?' — giảm nhu cầu kiểm soát từ trung tâm.</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Đầu tư vào mục đích chia sẻ — nó là kiến trúc vô hình điều phối CAS nhân tạo.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-cat="cat7" data-id="120">
+  <div class="card-header" onclick="toggleCard(this)" style="border-left: 4px solid #65a30d">
+    <div class="card-meta">
+      <span class="card-num">#120</span>
+      <span class="card-cat" style="background:#65a30d20; color:#65a30d">🌏 Hệ Sinh Thái & Tương Lai</span>
+    </div>
+    <div class="card-title-wrap">
+      <h3 class="card-title">Khôn Ngoan Hệ Thống</h3>
+      <span class="card-en">(Systems Wisdom)</span>
+    </div>
+    <p class="card-summary">Tổng hợp: sống và làm việc thông minh trong thế giới CAS đòi hỏi loại khôn ngoan đặc biệt.</p>
+    <span class="card-toggle">▼</span>
+  </div>
+  <div class="card-body">
+    <div class="card-detail"><p><strong>Khôn ngoan hệ thống (Systems Wisdom)</strong> là năng lực tổng hợp: thấy mối quan hệ (không chỉ sự kiện), hiểu vòng phản hồi (không chỉ nguyên nhân tuyến tính), tôn trọng sự nổi sinh (không cần kiểm soát tất cả), và hành động khiêm tốn (nhận ra giới hạn của hiểu biết). Đây là loại trí tuệ cần thiết cho thế kỷ 21.</p></div>
+    <div class="card-example">
+      <div class="label-tag example-tag">📌 Ví dụ thực tế</div>
+      <p>Donella Meadows: 'Thế giới phức tạp hơn khả năng hiểu của chúng ta. Nhưng chúng ta có thể hiểu đủ để hành động khôn ngoan. Chìa khóa không phải kiểm soát mà lắng nghe — hệ thống sẽ chỉ cho bạn thấy nó muốn gì.'</p>
+    </div>
+    <div class="card-takeaway">
+      <div class="label-tag takeaway-tag">💡 Bài học cốt lõi</div>
+      <p>Cultivate systems wisdom: tư duy quan hệ, hành động khiêm tốn, học hỏi không ngừng, và tôn trọng sự phức tạp.</p>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+
+<div class="footer">
+  Hệ Thống Thích Nghi Phức Tạp (Complex Adaptive Systems) · 120 Khái Niệm Cốt Lõi<br>
+  Thư viện giáo dục tiếng Việt · Phiên bản 1.0
+</div>
+
+<script>
+let currentCat = 'all';
+let currentSearch = '';
+let openCard = null;
+
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  if (openCard && openCard !== header) {
+    openCard.classList.remove('open');
+    openCard.nextElementSibling.classList.remove('open');
+  }
+  header.classList.toggle('open');
+  body.classList.toggle('open');
+  openCard = header.classList.contains('open') ? header : null;
+}
+
+function filterCards(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function searchCards() {
+  currentSearch = document.getElementById('searchInput').value.toLowerCase();
+  applyFilters();
+}
+
+function applyFilters() {
+  const cards = document.querySelectorAll('.card');
+  let visible = 0;
+  cards.forEach(card => {
+    const catMatch = currentCat === 'all' || card.dataset.cat === currentCat;
+    let textMatch = true;
+    if (currentSearch) {
+      const text = card.textContent.toLowerCase();
+      textMatch = currentSearch.split(' ').every(word => text.includes(word));
+    }
+    if (catMatch && textMatch) {
+      card.classList.remove('hidden');
+      visible++;
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+
+  const total = cards.length;
+  document.getElementById('resultsInfo').textContent = `Hiển thị ${visible} / ${total} khái niệm`;
+
+  const grid = document.getElementById('cardGrid');
+  const noRes = grid.querySelector('.no-results');
+  if (visible === 0) {
+    if (!noRes) {
+      const div = document.createElement('div');
+      div.className = 'no-results';
+      div.textContent = '😕 Không tìm thấy kết quả phù hợp.';
+      grid.appendChild(div);
+    }
+  } else if (noRes) {
+    noRes.remove();
+  }
+}
+</script>
+</body>
+</html>
